@@ -1,0 +1,28 @@
+name: 'Rust'
+description: 'Rust'
+inputs:
+  github-token:
+    description: "GitHub Token"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Cargo Cache
+      id: cargo-cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/.crates.toml
+          ~/.cargo/bin
+          ./target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          ${{ runner.os }}-cargo-
+    - name: "Toolchain: operating system"
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      shell: bash
+    - name: "Toolchain: just"
+      uses: extractions/setup-just@v1
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}

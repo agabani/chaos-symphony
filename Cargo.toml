@@ -1,0 +1,4 @@
+[workspace]
+members = ["chaos-symphony", "chaos-symphony-*"]
+default-members = ["chaos-symphony", "chaos-symphony-*"]
+resolver = "2"
