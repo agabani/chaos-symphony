@@ -5,10 +5,23 @@ version = 3
 [[package]]
 name = "chaos-symphony"
 version = "0.1.0"
-dependencies = [
- "chaos-symphony-network",
-]
+
+[[package]]
+name = "chaos-symphony-async"
+version = "0.1.0"
 
 [[package]]
 name = "chaos-symphony-network"
+version = "0.1.0"
+
+[[package]]
+name = "chaos-symphony-persistence"
+version = "0.1.0"
+
+[[package]]
+name = "chaos-symphony-replication"
+version = "0.1.0"
+
+[[package]]
+name = "chaos-symphony-simulation"
 version = "0.1.0"
