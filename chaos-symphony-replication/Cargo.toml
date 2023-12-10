@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.12.1"
+chaos-symphony-network = { version = "0.1.0", path = "../chaos-symphony-network" }
 
 [profile.dev]
 opt-level = 1
