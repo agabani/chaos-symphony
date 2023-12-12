@@ -1280,6 +1280,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "chaos-symphony-network",
+ "tokio",
 ]
 
 [[package]]
@@ -1287,6 +1288,8 @@ name = "chaos-symphony-simulation"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "chaos-symphony-network",
+ "tokio",
 ]
 
 [[package]]
