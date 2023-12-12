@@ -17,9 +17,37 @@ async fn main() {
         let connection = connecting.accept().await.unwrap();
         println!("[network] connected");
 
-        while let Ok(buf) = connection.recv().await {
-            println!("[network] recv: {buf:?}");
-        }
+        let recv = {
+            let connection = connection.clone();
+            tokio::spawn(async move {
+                while let Ok(buf) = connection.recv().await {
+                    println!("[network] recv: {buf:?}");
+                }
+            })
+        };
+
+        let send = {
+            let connection = connection.clone();
+            tokio::spawn(async move {
+                loop {
+                    connection
+                        .send(chaos_symphony_network::Payload {
+                            id: "00000000".to_string(),
+                            endpoint: "/ping".to_string(),
+                            properties: std::collections::HashMap::new(),
+                        })
+                        .await
+                        .unwrap();
+
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                }
+            })
+        };
+
+        tokio::select! {
+            _ = recv => {},
+            _ = send => {},
+        };
 
         println!("[network] disconnected");
     });
