@@ -3,58 +3,25 @@
 
 //! Chaos Symphony Simulation
 
+mod network;
+
 use bevy::prelude::*;
-use chaos_symphony_network::Client;
+use network::{NetworkBridge, NetworkPlugin};
 
 #[tokio::main]
 async fn main() {
-    tokio::spawn(async move {
-        let client = Client::new().unwrap();
-
-        let connecting = client.connect().unwrap();
-        println!("[network] connecting");
-
-        let connection = connecting.accept().await.unwrap();
-        println!("[network] connected");
-
-        let recv = {
-            let connection = connection.clone();
-            tokio::spawn(async move {
-                while let Ok(buf) = connection.recv().await {
-                    println!("[network] recv: {buf:?}");
-                }
-            })
-        };
-
-        let send = {
-            let connection = connection.clone();
-            tokio::spawn(async move {
-                loop {
-                    connection
-                        .send(chaos_symphony_network::Payload {
-                            id: "00000000".to_string(),
-                            endpoint: "/ping".to_string(),
-                            properties: std::collections::HashMap::new(),
-                        })
-                        .await
-                        .unwrap();
-
-                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                }
-            })
-        };
-
-        tokio::select! {
-            _ = recv => {},
-            _ = send => {},
-        };
-
-        println!("[network] disconnected");
-    });
-
     let mut app = App::new();
 
-    app.add_plugins(MinimalPlugins);
+    app.add_plugins(MinimalPlugins)
+        .add_plugins(NetworkPlugin)
+        .add_systems(Startup, connect);
 
     app.run();
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn connect(mut commands: Commands, bridge: Res<NetworkBridge>) {
+    let connection = bridge.connection();
+    connection.connect().expect("unable to connect");
+    commands.spawn(connection);
 }

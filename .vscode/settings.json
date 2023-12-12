@@ -8,5 +8,8 @@
     "pkcs",
     "rcgen",
     "rustls"
-  ]
+  ],
+  "files.associations": {
+    "justfile": "makefile"
+  }
 }
