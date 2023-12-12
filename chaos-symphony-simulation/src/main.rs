@@ -21,7 +21,7 @@ async fn main() {
 
 #[allow(clippy::needless_pass_by_value)]
 fn connect(mut commands: Commands, bridge: Res<NetworkBridge>) {
-    let connection = bridge.connection();
-    connection.connect().expect("unable to connect");
-    commands.spawn(connection);
+    let endpoint = bridge.endpoint();
+    endpoint.connect().expect("unable to connect");
+    commands.spawn(endpoint);
 }
