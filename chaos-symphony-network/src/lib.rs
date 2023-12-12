@@ -3,10 +3,10 @@
 
 //! Chaos Symphony Network
 
-use std::{fs, io, sync::Arc};
+use std::{collections::HashMap, fs, io, sync::Arc};
 
 /// Accept Error.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum AcceptError {
     /// Connection.
     Connection(quinn::ConnectionError),
@@ -75,7 +75,7 @@ impl Client {
 }
 
 /// Connect Error.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum ConnectError {
     /// Connect.
     Connect(quinn::ConnectError),
@@ -111,7 +111,7 @@ impl Connection {
     /// # Errors
     ///
     /// Will return `Err` if connection is lost or unable to read.
-    pub async fn recv(&self) -> Result<Vec<u8>, RecvError> {
+    pub async fn recv(&self) -> Result<Payload, RecvError> {
         let (_, mut recv) = self
             .inner
             .accept_bi()
@@ -121,7 +121,7 @@ impl Connection {
             .read_to_end(usize::MAX)
             .await
             .map_err(RecvError::Read)?;
-        Ok(buf)
+        serde_json::from_slice(&buf).map_err(RecvError::Json)
     }
 
     /// Send.
@@ -129,7 +129,8 @@ impl Connection {
     /// # Errors
     ///
     /// Will return `Err` if connection is lost or unable to write.
-    pub async fn send(&self, buf: Vec<u8>) -> Result<(), SendError> {
+    pub async fn send(&self, payload: Payload) -> Result<(), SendError> {
+        let buf = serde_json::to_vec(&payload).map_err(SendError::Json)?;
         let (mut send, _) = self.inner.open_bi().await.map_err(SendError::Connection)?;
         send.write_all(&buf).await.map_err(SendError::Write)?;
         send.finish().await.map_err(SendError::Write)?;
@@ -137,21 +138,40 @@ impl Connection {
     }
 }
 
+/// Payload.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct Payload {
+    /// Id.
+    pub id: String,
+
+    /// Endpoint.
+    pub endpoint: String,
+
+    /// Properties.
+    pub properties: HashMap<String, String>,
+}
+
 /// Send Error.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum RecvError {
     /// Connection.
     Connection(quinn::ConnectionError),
+
+    /// Json.
+    Json(serde_json::Error),
 
     /// Read.
     Read(quinn::ReadToEndError),
 }
 
 /// Send Error.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum SendError {
     /// Connection.
     Connection(quinn::ConnectionError),
+
+    /// Json.
+    Json(serde_json::Error),
 
     /// Write.
     Write(quinn::WriteError),
@@ -229,9 +249,9 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::mpsc;
+    use std::{collections::HashMap, sync::mpsc};
 
-    use crate::{Client, Server};
+    use crate::{Client, Payload, Server};
 
     #[tokio::test]
     async fn test_connection() {
@@ -274,16 +294,32 @@ mod tests {
             });
         }
 
+        let payload_1 = Payload {
+            id: "1".to_string(),
+            endpoint: "/1".to_string(),
+            properties: HashMap::from([("key_1".to_string(), "value_1".to_string())]),
+        };
+        let payload_2 = Payload {
+            id: "2".to_string(),
+            endpoint: "/2".to_string(),
+            properties: HashMap::from([("key_2".to_string(), "value_2".to_string())]),
+        };
+        let payload_3 = Payload {
+            id: "3".to_string(),
+            endpoint: "/3".to_string(),
+            properties: HashMap::from([("key_3".to_string(), "value_3".to_string())]),
+        };
+
         // Act
-        connection.send(vec![1, 2, 3]).await.unwrap();
-        connection.send(vec![4, 5, 6]).await.unwrap();
-        connection.send(vec![7, 8, 9]).await.unwrap();
+        connection.send(payload_1.clone()).await.unwrap();
+        connection.send(payload_2.clone()).await.unwrap();
+        connection.send(payload_3.clone()).await.unwrap();
 
         // Assert
         tokio::task::spawn_blocking(move || {
-            assert_eq!(vec![1, 2, 3], recv.recv().unwrap());
-            assert_eq!(vec![4, 5, 6], recv.recv().unwrap());
-            assert_eq!(vec![7, 8, 9], recv.recv().unwrap());
+            assert_eq!(payload_1, recv.recv().unwrap());
+            assert_eq!(payload_2, recv.recv().unwrap());
+            assert_eq!(payload_3, recv.recv().unwrap());
         })
         .await
         .unwrap();
