@@ -3,7 +3,7 @@
 
 //! Chaos Symphony Network
 
-use std::{collections::HashMap, fs, io, sync::Arc};
+use std::{collections::HashMap, fs, io, net::SocketAddr, sync::Arc};
 
 /// Accept Error.
 #[derive(Debug)]
@@ -97,6 +97,12 @@ impl Connecting {
         let inner = self.inner.await.map_err(AcceptError::Connection)?;
         Ok(Connection { inner })
     }
+
+    /// Returns the remote address of this [`Connecting`].
+    #[must_use]
+    pub fn remote_address(&self) -> SocketAddr {
+        self.inner.remote_address()
+    }
 }
 
 /// Connection.
@@ -106,6 +112,12 @@ pub struct Connection {
 }
 
 impl Connection {
+    /// Returns the id of this [`Connection`].
+    #[must_use]
+    pub fn id(&self) -> usize {
+        self.inner.stable_id()
+    }
+
     /// Recv.
     ///
     /// # Errors
@@ -122,6 +134,12 @@ impl Connection {
             .await
             .map_err(RecvError::Read)?;
         serde_json::from_slice(&buf).map_err(RecvError::Json)
+    }
+
+    /// Returns the remote address of this [`Connection`].
+    #[must_use]
+    pub fn remote_address(&self) -> SocketAddr {
+        self.inner.remote_address()
     }
 
     /// Send.

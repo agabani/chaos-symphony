@@ -27,16 +27,6 @@ impl Plugin for NetworkPlugin {
     }
 }
 
-/// Network Send.
-#[allow(clippy::module_name_repetitions)]
-pub enum NetworkSend {
-    /// Connect.
-    Connect,
-
-    /// Event.
-    Event(Payload),
-}
-
 /// Bridges bevy and tokio runtime using channels.
 async fn bridge(
     _sender: std::sync::mpsc::Sender<()>,
@@ -74,24 +64,24 @@ pub struct NetworkBridge {
 }
 
 impl NetworkBridge {
-    /// Creates a new [`NetworkConnection`].
-    pub fn connection(&self) -> NetworkConnection {
-        NetworkConnection {
+    /// Creates a new [`NetworkEndpoint`].
+    pub fn endpoint(&self) -> NetworkEndpoint {
+        NetworkEndpoint {
             send: self.send.clone(),
             _recv: self.recv.clone(),
         }
     }
 }
 
-/// Network Connection.
+/// Network Endpoint.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Component)]
-pub struct NetworkConnection {
+pub struct NetworkEndpoint {
     send: tokio::sync::mpsc::UnboundedSender<NetworkSend>,
     _recv: Arc<Mutex<std::sync::mpsc::Receiver<()>>>,
 }
 
-impl NetworkConnection {
+impl NetworkEndpoint {
     /// Connect to a server.
     pub fn connect(&self) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
         self.send.send(NetworkSend::Connect)
@@ -104,6 +94,16 @@ impl NetworkConnection {
     ) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
         self.send.send(NetworkSend::Event(payload))
     }
+}
+
+/// Network Send.
+#[allow(clippy::module_name_repetitions)]
+pub enum NetworkSend {
+    /// Connect.
+    Connect,
+
+    /// Event.
+    Event(Payload),
 }
 
 /// Keep Alive Timer.
@@ -123,11 +123,7 @@ impl KeepAliveTimer {
 
 /// Keeps connection alive by periodically sending pings.
 #[allow(clippy::needless_pass_by_value)]
-fn keep_alive(
-    time: Res<Time>,
-    mut timer: ResMut<KeepAliveTimer>,
-    query: Query<&NetworkConnection>,
-) {
+fn keep_alive(time: Res<Time>, mut timer: ResMut<KeepAliveTimer>, query: Query<&NetworkEndpoint>) {
     if timer.inner.tick(time.delta()).just_finished() {
         query.for_each(|connection| {
             connection

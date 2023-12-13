@@ -3,11 +3,13 @@
     "agabani",
     "alpn",
     "clippy",
+    "despawn",
     "libasound",
     "libudev",
     "pkcs",
     "rcgen",
-    "rustls"
+    "rustls",
+    "wgpu"
   ],
   "files.associations": {
     "justfile": "makefile"
