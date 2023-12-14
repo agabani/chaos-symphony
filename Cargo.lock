@@ -1264,6 +1264,7 @@ name = "chaos-symphony-bevy-network"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "chaos-symphony-async",
  "chaos-symphony-network",
  "tokio",
  "tracing",
@@ -1301,6 +1302,7 @@ name = "chaos-symphony-simulation"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "chaos-symphony-async",
  "chaos-symphony-bevy-network",
  "tokio",
  "tracing",

@@ -4,8 +4,9 @@
 //! Chaos Symphony Simulation
 
 use bevy::{log::LogPlugin, prelude::*};
+use chaos_symphony_async::Poll;
 use chaos_symphony_bevy_network::{
-    Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv, Poll,
+    Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv,
 };
 
 #[tokio::main]
