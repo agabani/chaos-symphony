@@ -4,7 +4,9 @@
 //! Chaos Symphony Simulation
 
 use bevy::{log::LogPlugin, prelude::*};
-use chaos_symphony_bevy_network::{NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv};
+use chaos_symphony_bevy_network::{
+    Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv, Poll,
+};
 
 #[tokio::main]
 async fn main() {
@@ -29,28 +31,42 @@ async fn main() {
         server: false,
     })
     .add_systems(Startup, connect)
-    .add_systems(Update, (connected, disconnected, recv));
+    .add_systems(Update, (connecting, disconnected, recv));
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn connect(client: Res<NetworkClient>) {
-    client.connect().unwrap();
+fn connect(mut commands: Commands, client: Res<NetworkClient>) {
+    if let Ok(connecting) = client.connect() {
+        commands.spawn(connecting);
+    } else {
+        error!("failed to initiate connect");
+    }
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn connected(mut commands: Commands, client: Res<NetworkClient>) {
-    while let Ok(endpoint) = client.try_recv() {
-        let id = endpoint.id();
-        let remote_address = endpoint.remote_address();
+fn connecting(mut commands: Commands, connectings: Query<(Entity, &Connecting)>) {
+    connectings.for_each(|(entity, connecting)| {
+        if let Poll::Ready(result) = connecting.try_poll() {
+            commands.entity(entity).despawn();
+            match result {
+                Ok(endpoint) => {
+                    let id = endpoint.id();
+                    let remote_address = endpoint.remote_address();
 
-        let entity = commands.spawn(endpoint).id();
+                    let entity = commands.spawn(endpoint).id();
 
-        let span = info_span!("accept", entity =? entity, id, remote_address =% remote_address);
-        let _guard = span.enter();
-        info!("connected");
-    }
+                    let span = info_span!("connecting", entity =? entity, id, remote_address =% remote_address);
+                    let _guard = span.enter();
+                    info!("connected");
+                }
+                Err(error) => {
+                    error!(error =? error, "failed to connect");
+                }
+            }
+        }
+    });
 }
 
 #[allow(clippy::needless_pass_by_value)]

@@ -34,9 +34,8 @@ impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
         if self.client {
             let (from_bevy, to_tokio) = tokio::sync::mpsc::unbounded_channel();
-            let (from_tokio, to_bevy) = std::sync::mpsc::channel();
-            tokio::spawn(NetworkClient::bridge(from_tokio, to_tokio));
-            app.insert_resource(NetworkClient::new(from_bevy, to_bevy));
+            tokio::spawn(NetworkClient::bridge(to_tokio));
+            app.insert_resource(NetworkClient::new(from_bevy));
         }
 
         if self.server {
@@ -54,20 +53,15 @@ impl Plugin for NetworkPlugin {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Resource)]
 pub struct NetworkClient {
-    sender: tokio::sync::mpsc::UnboundedSender<()>,
-    receiver: Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
+    sender: tokio::sync::mpsc::UnboundedSender<std::sync::mpsc::Sender<NetworkEndpoint>>,
 }
 
 impl NetworkClient {
     /// Creates a new [`NetworkClient`].
     fn new(
-        sender: tokio::sync::mpsc::UnboundedSender<()>,
-        receiver: std::sync::mpsc::Receiver<NetworkEndpoint>,
+        sender: tokio::sync::mpsc::UnboundedSender<std::sync::mpsc::Sender<NetworkEndpoint>>,
     ) -> Self {
-        Self {
-            sender,
-            receiver: Mutex::new(receiver),
-        }
+        Self { sender }
     }
 
     /// Connect.
@@ -75,40 +69,34 @@ impl NetworkClient {
     /// # Errors
     ///
     /// Will return `Err` if bevy-tokio bridge is disconnected.
-    pub fn connect(&self) -> Result<(), tokio::sync::mpsc::error::SendError<()>> {
-        self.sender.send(())
-    }
-
-    /// Try to receive a new [`NetworkEndpoint`].
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` if bevy-tokio bridge is disconnected or empty.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if [`Mutex`] is poisoned.
-    pub fn try_recv(&self) -> Result<NetworkEndpoint, TryRecvError> {
-        self.receiver.lock().expect("poisoned").try_recv()
+    pub fn connect(
+        &self,
+    ) -> Result<
+        Connecting,
+        tokio::sync::mpsc::error::SendError<std::sync::mpsc::Sender<NetworkEndpoint>>,
+    > {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        self.sender.send(sender).map(|()| Connecting {
+            receiver: Mutex::new(receiver),
+        })
     }
 
     /// Bridges bevy-tokio runtime using channels.
-    #[instrument(name = "network_client", skip(sender, receiver))]
+    #[instrument(name = "network_client", skip(receiver))]
     async fn bridge(
-        sender: std::sync::mpsc::Sender<NetworkEndpoint>,
-        mut receiver: tokio::sync::mpsc::UnboundedReceiver<()>,
+        mut receiver: tokio::sync::mpsc::UnboundedReceiver<
+            std::sync::mpsc::Sender<NetworkEndpoint>,
+        >,
     ) {
         let client = Client::new().expect("unable to bind to port or find certificate");
         debug!("started");
 
         loop {
-            let Some(()) = receiver.recv().await else {
+            let Some(sender) = receiver.recv().await else {
                 panic!("connection closed");
             };
 
             let connecting = client.connect().unwrap();
-
-            let sender = sender.clone();
 
             tokio::spawn(async move {
                 let span = error_span!(
@@ -387,4 +375,47 @@ fn keep_alive(
             };
         });
     }
+}
+
+/// Connecting.
+#[derive(Component)]
+pub struct Connecting {
+    receiver: Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
+}
+
+impl Connecting {
+    /// Try Poll.
+    ///
+    /// Will disconnect bevy-tokio bridge on first [`Poll::Ready`].
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected or empty.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if [`Mutex`] is poisoned.
+    pub fn try_poll(&self) -> Poll<Result<NetworkEndpoint, PollError>> {
+        match self.receiver.lock().expect("poisoned").try_recv() {
+            Ok(value) => Poll::Ready(Ok(value)),
+            Err(TryRecvError::Disconnected) => Poll::Ready(Err(PollError::Disconnected)),
+            Err(TryRecvError::Empty) => Poll::Pending,
+        }
+    }
+}
+
+/// Poll.
+pub enum Poll<T> {
+    /// Ready.
+    Ready(T),
+
+    /// Pending
+    Pending,
+}
+
+/// Poll Error.
+#[derive(Debug)]
+pub enum PollError {
+    /// Disconnected.
+    Disconnected,
 }
