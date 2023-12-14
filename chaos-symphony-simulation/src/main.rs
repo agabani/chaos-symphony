@@ -30,18 +30,25 @@ async fn main() {
         client: true,
         server: false,
     })
-    .add_systems(Startup, connect)
-    .add_systems(Update, (connecting, disconnected, recv));
+    .add_systems(Update, (connect, connecting, disconnected, recv));
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn connect(mut commands: Commands, client: Res<NetworkClient>) {
-    if let Ok(connecting) = client.connect() {
-        commands.spawn(connecting);
-    } else {
-        error!("failed to initiate connect");
+fn connect(
+    mut commands: Commands,
+    client: Res<NetworkClient>,
+    connectings: Query<(), With<Connecting>>,
+    endpoints: Query<(), With<NetworkEndpoint>>,
+) {
+    let connections = connectings.iter().count() + endpoints.iter().count();
+    for _ in connections..1 {
+        if let Ok(connecting) = client.connect() {
+            commands.spawn(connecting);
+        } else {
+            error!("failed to initiate connect");
+        }
     }
 }
 
@@ -50,21 +57,32 @@ fn connecting(mut commands: Commands, connectings: Query<(Entity, &Connecting)>)
     connectings.for_each(|(entity, connecting)| {
         if let Poll::Ready(result) = connecting.try_poll() {
             commands.entity(entity).despawn();
-            match result {
-                Ok(endpoint) => {
-                    let id = endpoint.id();
-                    let remote_address = endpoint.remote_address();
 
-                    let entity = commands.spawn(endpoint).id();
-
-                    let span = info_span!("connecting", entity =? entity, id, remote_address =% remote_address);
-                    let _guard = span.enter();
-                    info!("connected");
-                }
+            let result = match result {
+                Ok(result) => result,
                 Err(error) => {
                     error!(error =? error, "failed to connect");
+                    return;
                 }
-            }
+            };
+
+            let endpoint = match result {
+                Ok(result) => result,
+                Err(error) => {
+                    error!(error =? error, "failed to connect");
+                    return;
+                }
+            };
+
+            let id = endpoint.id();
+            let remote_address = endpoint.remote_address();
+
+            let entity = commands.spawn(endpoint).id();
+
+            let span =
+                info_span!("connecting", entity =? entity, id, remote_address =% remote_address);
+            let _guard = span.enter();
+            info!("connected");
         }
     });
 }

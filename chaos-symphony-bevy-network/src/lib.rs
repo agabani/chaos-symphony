@@ -18,7 +18,7 @@ use bevy::{
     prelude::*,
     utils::{tracing::instrument, Uuid},
 };
-use chaos_symphony_network::{Client, Connection, Payload, Server};
+use chaos_symphony_network::{AcceptError, Client, Connection, Payload, Server};
 
 /// Network Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -53,13 +53,17 @@ impl Plugin for NetworkPlugin {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Resource)]
 pub struct NetworkClient {
-    sender: tokio::sync::mpsc::UnboundedSender<std::sync::mpsc::Sender<NetworkEndpoint>>,
+    sender: tokio::sync::mpsc::UnboundedSender<
+        std::sync::mpsc::Sender<Result<NetworkEndpoint, AcceptError>>,
+    >,
 }
 
 impl NetworkClient {
     /// Creates a new [`NetworkClient`].
     fn new(
-        sender: tokio::sync::mpsc::UnboundedSender<std::sync::mpsc::Sender<NetworkEndpoint>>,
+        sender: tokio::sync::mpsc::UnboundedSender<
+            std::sync::mpsc::Sender<Result<NetworkEndpoint, AcceptError>>,
+        >,
     ) -> Self {
         Self { sender }
     }
@@ -73,7 +77,9 @@ impl NetworkClient {
         &self,
     ) -> Result<
         Connecting,
-        tokio::sync::mpsc::error::SendError<std::sync::mpsc::Sender<NetworkEndpoint>>,
+        tokio::sync::mpsc::error::SendError<
+            std::sync::mpsc::Sender<Result<NetworkEndpoint, AcceptError>>,
+        >,
     > {
         let (sender, receiver) = std::sync::mpsc::channel();
         self.sender.send(sender).map(|()| Connecting {
@@ -85,7 +91,7 @@ impl NetworkClient {
     #[instrument(name = "network_client", skip(receiver))]
     async fn bridge(
         mut receiver: tokio::sync::mpsc::UnboundedReceiver<
-            std::sync::mpsc::Sender<NetworkEndpoint>,
+            std::sync::mpsc::Sender<Result<NetworkEndpoint, AcceptError>>,
         >,
     ) {
         let client = Client::new().expect("unable to bind to port or find certificate");
@@ -105,13 +111,19 @@ impl NetworkClient {
                 let _guard = span.enter();
                 debug!("connecting");
 
-                let connection = connecting.accept().await.unwrap();
+                let connection = match connecting.accept().await {
+                    Ok(connection) => connection,
+                    Err(error) => {
+                        sender.send(Err(error)).unwrap();
+                        return;
+                    }
+                };
 
                 let (from_bevy, to_tokio) = tokio::sync::mpsc::unbounded_channel();
                 let (from_tokio, to_bevy) = std::sync::mpsc::channel();
 
                 sender
-                    .send(NetworkEndpoint::new(&connection, from_bevy, to_bevy))
+                    .send(Ok(NetworkEndpoint::new(&connection, from_bevy, to_bevy)))
                     .unwrap();
 
                 NetworkEndpoint::bridge(connection, from_tokio, to_tokio).await;
@@ -380,7 +392,7 @@ fn keep_alive(
 /// Connecting.
 #[derive(Component)]
 pub struct Connecting {
-    receiver: Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
+    receiver: Mutex<std::sync::mpsc::Receiver<Result<NetworkEndpoint, AcceptError>>>,
 }
 
 impl Connecting {
@@ -395,7 +407,7 @@ impl Connecting {
     /// # Panics
     ///
     /// Will panic if [`Mutex`] is poisoned.
-    pub fn try_poll(&self) -> Poll<Result<NetworkEndpoint, PollError>> {
+    pub fn try_poll(&self) -> Poll<Result<Result<NetworkEndpoint, AcceptError>, PollError>> {
         match self.receiver.lock().expect("poisoned").try_recv() {
             Ok(value) => Poll::Ready(Ok(value)),
             Err(TryRecvError::Disconnected) => Poll::Ready(Err(PollError::Disconnected)),
