@@ -18,6 +18,7 @@ use bevy::{
     prelude::*,
     utils::{tracing::instrument, Uuid},
 };
+use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network::{AcceptError, Client, Connection, Payload, Server};
 
 /// Network Plugin.
@@ -83,7 +84,7 @@ impl NetworkClient {
     > {
         let (sender, receiver) = std::sync::mpsc::channel();
         self.sender.send(sender).map(|()| Connecting {
-            receiver: Mutex::new(receiver),
+            inner: Future::new(receiver),
         })
     }
 
@@ -392,7 +393,7 @@ fn keep_alive(
 /// Connecting.
 #[derive(Component)]
 pub struct Connecting {
-    receiver: Mutex<std::sync::mpsc::Receiver<Result<NetworkEndpoint, AcceptError>>>,
+    inner: Future<Result<NetworkEndpoint, AcceptError>>,
 }
 
 impl Connecting {
@@ -408,26 +409,6 @@ impl Connecting {
     ///
     /// Will panic if [`Mutex`] is poisoned.
     pub fn try_poll(&self) -> Poll<Result<Result<NetworkEndpoint, AcceptError>, PollError>> {
-        match self.receiver.lock().expect("poisoned").try_recv() {
-            Ok(value) => Poll::Ready(Ok(value)),
-            Err(TryRecvError::Disconnected) => Poll::Ready(Err(PollError::Disconnected)),
-            Err(TryRecvError::Empty) => Poll::Pending,
-        }
+        self.inner.try_poll()
     }
-}
-
-/// Poll.
-pub enum Poll<T> {
-    /// Ready.
-    Ready(T),
-
-    /// Pending
-    Pending,
-}
-
-/// Poll Error.
-#[derive(Debug)]
-pub enum PollError {
-    /// Disconnected.
-    Disconnected,
 }

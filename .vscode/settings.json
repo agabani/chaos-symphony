@@ -10,6 +10,7 @@
     "pkcs",
     "rcgen",
     "rustls",
+    "serde",
     "wgpu"
   ],
   "files.associations": {
