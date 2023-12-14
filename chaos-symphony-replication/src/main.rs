@@ -3,14 +3,10 @@
 
 //! Chaos Symphony Replication
 
-mod network;
-
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
-use network::{NetworkEndpoint, NetworkPlugin, NetworkServer};
-
-use crate::network::NetworkRecv;
+use chaos_symphony_bevy_network::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 
 #[tokio::main]
 async fn main() {
@@ -19,20 +15,30 @@ async fn main() {
     app.add_plugins((
         MinimalPlugins,
         LogPlugin {
-            filter: "info,wgpu_core=warn,wgpu_hal=warn,chaos_symphony_replication=debug".into(),
+            filter: [
+                "info",
+                "chaos_symphony_bevy_network=debug",
+                "chaos_symphony_replication=debug",
+                "wgpu_core=warn",
+                "wgpu_hal=warn",
+            ]
+            .join(","),
             level: bevy::log::Level::DEBUG,
         },
     ))
-    .add_plugins(NetworkPlugin)
-    .add_systems(Update, (accept, disconnected, recv));
+    .add_plugins(NetworkPlugin {
+        client: false,
+        server: true,
+    })
+    .add_systems(Update, (accepted, disconnected, recv));
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn accept(mut commands: Commands, server: Res<NetworkServer>) {
+fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
     loop {
-        match server.try_accept() {
+        match server.try_recv() {
             Ok(endpoint) => {
                 let id = endpoint.id();
                 let remote_address = endpoint.remote_address();
