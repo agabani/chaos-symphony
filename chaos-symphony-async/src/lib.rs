@@ -49,6 +49,19 @@ pub enum Poll<T> {
     Pending,
 }
 
+impl<T> Poll<T> {
+    /// Maps a `Poll<T>` to `Poll<U>` by applying a function to a contained value.
+    pub fn map<U, F>(self, f: F) -> Poll<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            Poll::Ready(t) => Poll::Ready(f(t)),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
 /// Poll Error.
 #[derive(Debug)]
 pub enum PollError {
