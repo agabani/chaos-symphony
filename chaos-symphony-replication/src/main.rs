@@ -7,6 +7,7 @@ use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
 use chaos_symphony_bevy_network::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use chaos_symphony_network::Payload;
 
 #[tokio::main]
 async fn main() {
@@ -81,8 +82,20 @@ fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
 
         while let Ok(payload) = endpoint.try_recv() {
             match payload {
-                NetworkRecv::Event(payload) => {
+                NetworkRecv::NonBlocking { payload } => {
                     info!("recv: {payload:?}");
+
+                    if payload.endpoint == "/request/authenticate" {
+                        let response = Payload {
+                            id: payload.id,
+                            endpoint: "/response/authenticate".to_string(),
+                            properties: std::collections::HashMap::from([("success".to_string(), "true".to_string())])
+                        };
+
+                        if let Err(error) = endpoint.try_send_non_blocking(response) {
+                            warn!(error =? error, "unable to send authenticate response");
+                        }
+                    }
                 }
             }
         }

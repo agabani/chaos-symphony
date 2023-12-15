@@ -195,16 +195,36 @@ impl NetworkEndpoint {
         result
     }
 
-    /// Try send payload.
+    /// Try send blocking.
     ///
     /// # Errors
     ///
     /// Will return `Err` if bevy-tokio bridge is disconnected.
-    pub fn try_send(
+    pub fn try_send_blocking(
+        &self,
+        payload: Payload,
+    ) -> Result<Future<Payload>, tokio::sync::mpsc::error::SendError<NetworkSend>> {
+        let (sender, receiver) = std::sync::mpsc::channel();
+
+        let result = self.sender.send(NetworkSend::Blocking { payload, sender });
+
+        if result.is_err() {
+            self.is_disconnected.store(true, Ordering::Relaxed);
+        }
+
+        result.map(|()| Future::new(receiver))
+    }
+
+    /// Try send non blocking.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected.
+    pub fn try_send_non_blocking(
         &self,
         payload: Payload,
     ) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
-        let result = self.sender.send(NetworkSend::Event(payload));
+        let result = self.sender.send(NetworkSend::NonBlocking { payload });
 
         if result.is_err() {
             self.is_disconnected.store(true, Ordering::Relaxed);
@@ -229,13 +249,19 @@ impl NetworkEndpoint {
     ) {
         debug!("connected");
 
+        let mut blocking = HashMap::<String, std::sync::mpsc::Sender<Payload>>::new();
+
         loop {
             tokio::select! {
                 result = connection.recv() => {
                     // inbound traffic
                     match result {
                         Ok(payload) =>  {
-                            if sender.send(NetworkRecv::Event(payload)).is_err() {
+                            if let Some(sender) = blocking.remove(&payload.id) {
+                                if sender.send(payload).is_err() {
+                                    break;
+                                }
+                            } else if sender.send(NetworkRecv::NonBlocking{ payload }).is_err() {
                                 break;
                             }
                         },
@@ -249,7 +275,14 @@ impl NetworkEndpoint {
                     match result {
                         Some(instruction) => {
                             match instruction {
-                                NetworkSend::Event(payload) => {
+                                NetworkSend::Blocking { payload, sender } => {
+                                    let id = payload.id.clone();
+                                    if connection.send(payload).await.is_err() {
+                                        break;
+                                    }
+                                    blocking.insert(id, sender);
+                                },
+                                NetworkSend::NonBlocking{ payload } => {
                                     if connection.send(payload).await.is_err() {
                                         break;
                                     }
@@ -271,15 +304,30 @@ impl NetworkEndpoint {
 /// Network Recv.
 #[allow(clippy::module_name_repetitions)]
 pub enum NetworkRecv {
-    /// Event.
-    Event(Payload),
+    /// Non Blocking.
+    NonBlocking {
+        /// Payload.
+        payload: Payload,
+    },
 }
 
 /// Network Send.
 #[allow(clippy::module_name_repetitions)]
 pub enum NetworkSend {
-    /// Event.
-    Event(Payload),
+    /// Blocking.
+    Blocking {
+        /// Payload.
+        payload: Payload,
+
+        /// Sender.
+        sender: std::sync::mpsc::Sender<Payload>,
+    },
+
+    /// Non Blocking.
+    NonBlocking {
+        /// Payload.
+        payload: Payload,
+    },
 }
 
 /// Network Server.
@@ -375,7 +423,7 @@ fn keep_alive(
                 properties: HashMap::new(),
             };
 
-            if endpoint.try_send(payload).is_err() {
+            if endpoint.try_send_non_blocking(payload).is_err() {
                 let span = warn_span!(
                     "keep_alive",
                     entity =? entity,
