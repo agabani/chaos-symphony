@@ -9,6 +9,7 @@ use chaos_symphony_bevy_network::{
     Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv,
 };
 use chaos_symphony_network::Payload;
+use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateResponse};
 
 #[tokio::main]
 async fn main() {
@@ -171,59 +172,6 @@ fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
             }
         }
     });
-}
-
-/// Authenticate Request
-struct AuthenticateRequest {
-    id: String,
-    identity: String,
-}
-
-impl From<AuthenticateRequest> for Payload {
-    fn from(value: AuthenticateRequest) -> Self {
-        Self {
-            id: value.id,
-            endpoint: "/request/authenticate".to_string(),
-            properties: std::collections::HashMap::from([("identity".to_string(), value.identity)]),
-        }
-    }
-}
-
-impl From<Payload> for AuthenticateRequest {
-    fn from(mut value: Payload) -> Self {
-        Self {
-            id: value.id,
-            identity: value.properties.remove("identity").unwrap(),
-        }
-    }
-}
-
-/// Authenticate Response.
-struct AuthenticateResponse {
-    id: String,
-    success: bool,
-}
-
-impl From<AuthenticateResponse> for Payload {
-    fn from(value: AuthenticateResponse) -> Self {
-        Self {
-            id: value.id,
-            endpoint: "/response/authenticate".to_string(),
-            properties: std::collections::HashMap::from([(
-                "success".to_string(),
-                value.success.to_string(),
-            )]),
-        }
-    }
-}
-
-impl From<Payload> for AuthenticateResponse {
-    fn from(mut value: Payload) -> Self {
-        Self {
-            id: value.id,
-            success: value.properties.remove("success").unwrap().parse().unwrap(),
-        }
-    }
 }
 
 #[derive(Component)]
