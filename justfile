@@ -24,6 +24,10 @@ lint-code:
 lint-format:
   @cargo fmt -- --check
 
+# run ai
+run-ai:
+  @cargo run -p chaos-symphony-ai
+
 # run replication
 run-replication:
   @cargo run -p chaos-symphony-replication

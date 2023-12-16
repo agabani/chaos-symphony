@@ -1256,6 +1256,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "chaos-symphony-ai"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "chaos-symphony-async",
+ "chaos-symphony-bevy-network",
+ "chaos-symphony-network",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "chaos-symphony-async"
 version = "0.1.0"
 
