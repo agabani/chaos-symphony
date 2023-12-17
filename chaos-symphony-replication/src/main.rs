@@ -6,6 +6,7 @@
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
+use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
 use chaos_symphony_network::Payload;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 
@@ -18,7 +19,8 @@ async fn main() {
         LogPlugin {
             filter: [
                 "info",
-                "chaos_symphony_bevy_network=debug",
+                "chaos_symphony_ecs=debug",
+                "chaos_symphony_network_bevy=debug",
                 "chaos_symphony_replication=debug",
                 "wgpu_core=warn",
                 "wgpu_hal=warn",
@@ -27,11 +29,14 @@ async fn main() {
             level: bevy::log::Level::DEBUG,
         },
     ))
-    .add_plugins(NetworkPlugin {
-        client: false,
-        server: true,
-    })
-    .add_systems(Update, (accepted, disconnected, recv));
+    .add_plugins((
+        NetworkPlugin {
+            client: false,
+            server: true,
+        },
+        NetworkDisconnectPlugin,
+    ))
+    .add_systems(Update, (accepted, recv));
 
     app.run();
 }
@@ -59,19 +64,6 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
             }
         };
     }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn disconnected(mut commands: Commands, endpoints: Query<(Entity, &NetworkEndpoint)>) {
-    endpoints.for_each(|(entity, endpoint)| {
-        let span = info_span!("disconnected", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
-        let _guard = span.enter();
-
-        if endpoint.is_disconnected() {
-            commands.entity(entity).despawn_recursive();
-            info!("disconnected");
-        }
-    });
 }
 
 #[allow(clippy::needless_pass_by_value)]

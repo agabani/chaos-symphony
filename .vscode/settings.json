@@ -6,6 +6,7 @@
     "clippy",
     "connectings",
     "despawn",
+    "despawns",
     "libasound",
     "libudev",
     "pkcs",
