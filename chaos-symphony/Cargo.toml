@@ -5,6 +5,10 @@ edition = "2021"
 
 [dependencies]
 bevy = "^0.12"
+chaos-symphony-ecs = { version = "^0.1", path = "../chaos-symphony-ecs" }
+chaos-symphony-network-bevy = { version = "^0.1", path = "../chaos-symphony-network-bevy" }
+tokio = { version = "^1", features = ["full"] }
+tracing = "^0.1"
 
 [profile.dev]
 opt-level = 1
