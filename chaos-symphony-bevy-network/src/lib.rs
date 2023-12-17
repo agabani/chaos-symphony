@@ -11,13 +11,9 @@ use std::{
         mpsc::TryRecvError,
         Arc, Mutex,
     },
-    time::Duration,
 };
 
-use bevy::{
-    prelude::*,
-    utils::{tracing::instrument, Uuid},
-};
+use bevy::{prelude::*, utils::tracing::instrument};
 use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network::{AcceptError, Client, Connection, Payload, Server};
 
@@ -44,9 +40,6 @@ impl Plugin for NetworkPlugin {
             tokio::spawn(NetworkServer::bridge(from_tokio));
             app.insert_resource(NetworkServer::new(to_bevy));
         }
-
-        app.insert_resource(KeepAliveTimer::new())
-            .add_systems(Update, keep_alive);
     }
 }
 
@@ -390,51 +383,6 @@ impl NetworkServer {
                 NetworkEndpoint::bridge(connection, from_tokio, to_tokio).await;
             });
         }
-    }
-}
-
-/// Keep Alive Timer.
-#[derive(Resource)]
-struct KeepAliveTimer {
-    inner: Timer,
-}
-
-impl KeepAliveTimer {
-    /// Creates a new [`KeepAliveTimer`].
-    fn new() -> Self {
-        Self {
-            inner: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
-        }
-    }
-}
-
-/// Keeps connection alive by periodically sending pings.
-#[allow(clippy::needless_pass_by_value)]
-fn keep_alive(
-    time: Res<Time>,
-    mut timer: ResMut<KeepAliveTimer>,
-    query: Query<(Entity, &NetworkEndpoint)>,
-) {
-    if timer.inner.tick(time.delta()).just_finished() {
-        query.for_each(|(entity, endpoint)| {
-            let payload = Payload {
-                id: Uuid::new_v4().to_string(),
-                endpoint: "/ping".to_string(),
-                properties: HashMap::new(),
-            };
-
-            if endpoint.try_send_non_blocking(payload).is_err() {
-                let span = warn_span!(
-                    "keep_alive",
-                    entity =? entity,
-                    id = endpoint.id(),
-                    remote_address =% endpoint.remote_address()
-                );
-                let _guard = span.enter();
-
-                warn!("unable to send ping");
-            };
-        });
     }
 }
 

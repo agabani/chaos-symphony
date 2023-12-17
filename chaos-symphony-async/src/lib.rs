@@ -30,7 +30,6 @@ impl<T> Future<T> {
     /// # Panics
     ///
     /// Will panic if [`Mutex`] is poisoned.
-    #[must_use]
     pub fn try_poll(&self) -> Poll<Result<T, PollError>> {
         match self.receiver.lock().expect("poisoned").try_recv() {
             Ok(value) => Poll::Ready(Ok(value)),
@@ -41,6 +40,7 @@ impl<T> Future<T> {
 }
 
 /// Poll.
+#[must_use = "this `Poll` may be a `Ready` variant, which must be handled"]
 pub enum Poll<T> {
     /// Ready.
     Ready(T),
