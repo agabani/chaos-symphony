@@ -9,13 +9,13 @@ use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc::TryRecvError,
-        Arc, Mutex,
+        Arc,
     },
 };
 
 use bevy::{prelude::*, utils::tracing::instrument};
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_network::{AcceptError, Client, Connection, Payload, Server};
+use chaos_symphony_network::{AcceptError, Client, Connection, Payload, RecvError, Server};
 
 /// Network Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -132,8 +132,8 @@ impl NetworkClient {
 pub struct NetworkEndpoint {
     id: usize,
     is_disconnected: std::sync::atomic::AtomicBool,
-    receiver: Arc<Mutex<std::sync::mpsc::Receiver<NetworkRecv>>>,
-    remote_address: std::net::SocketAddr,
+    receiver: Arc<std::sync::Mutex<std::sync::mpsc::Receiver<NetworkRecv>>>,
+    remote_address: SocketAddr,
     sender: tokio::sync::mpsc::UnboundedSender<NetworkSend>,
 }
 
@@ -148,7 +148,7 @@ impl NetworkEndpoint {
         Self {
             id: connection.id(),
             is_disconnected: AtomicBool::new(false),
-            receiver: Arc::new(Mutex::new(receiver)),
+            receiver: Arc::new(std::sync::Mutex::new(receiver)),
             remote_address: connection.remote_address(),
             sender,
         }
@@ -228,7 +228,7 @@ impl NetworkEndpoint {
 
     /// Bridges bevy-tokio runtime using channels.
     #[instrument(
-        name = "network_endpoint",
+        name = "network_endpoint_bridge",
         skip(connection, sender, receiver),
         fields(
             id = connection.id(),
@@ -238,59 +238,177 @@ impl NetworkEndpoint {
     async fn bridge(
         connection: Connection,
         sender: std::sync::mpsc::Sender<NetworkRecv>,
-        mut receiver: tokio::sync::mpsc::UnboundedReceiver<NetworkSend>,
+        receiver: tokio::sync::mpsc::UnboundedReceiver<NetworkSend>,
     ) {
         debug!("connected");
 
-        let mut blocking = HashMap::<String, std::sync::mpsc::Sender<Payload>>::new();
+        let database = Arc::new(tokio::sync::Mutex::new(HashMap::<
+            String,
+            std::sync::mpsc::Sender<Payload>,
+        >::new()));
 
-        loop {
-            tokio::select! {
-                result = connection.recv() => {
-                    // inbound traffic
-                    match result {
-                        Ok(payload) =>  {
-                            if let Some(sender) = blocking.remove(&payload.id) {
-                                if sender.send(payload).is_err() {
-                                    break;
-                                }
-                            } else if sender.send(NetworkRecv::NonBlocking{ payload }).is_err() {
-                                break;
-                            }
-                        },
-                        Err(_) => {
-                            break;
-                        },
-                    };
-                }
-                result = receiver.recv() => {
-                    // outbound traffic
-                    match result {
-                        Some(instruction) => {
-                            match instruction {
-                                NetworkSend::Blocking { payload, sender } => {
-                                    let id = payload.id.clone();
-                                    if connection.send(payload).await.is_err() {
-                                        break;
-                                    }
-                                    blocking.insert(id, sender);
-                                },
-                                NetworkSend::NonBlocking{ payload } => {
-                                    if connection.send(payload).await.is_err() {
-                                        break;
-                                    }
-                                },
-                            }
-                        },
-                        None => {
-                            break;
-                        },
-                    };
-                }
-            }
-        }
+        let (error_tx, mut error_rx) = tokio::sync::mpsc::unbounded_channel::<()>();
+
+        let quit_inbound = Self::bridge_inbounds(
+            error_tx.clone(),
+            database.clone(),
+            connection.clone(),
+            sender,
+        );
+        let quit_outbound = Self::bridge_outbounds(error_tx, database, connection, receiver);
+
+        error_rx.recv().await;
+
+        drop(quit_inbound);
+        drop(quit_outbound);
 
         debug!("disconnected");
+    }
+
+    /// Bridges inbounds bevy-tokio runtime using channels.
+    #[instrument(
+        name = "network_endpoint_bridge_inbounds",
+        skip(error_tx, database, connection, sender),
+        fields(
+            id = connection.id(),
+            remote_address =% connection.remote_address()
+        )
+    )]
+    fn bridge_inbounds(
+        error_tx: tokio::sync::mpsc::UnboundedSender<()>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        connection: Connection,
+        sender: std::sync::mpsc::Sender<NetworkRecv>,
+    ) -> tokio::sync::mpsc::Sender<()> {
+        let (quit_tx, mut quit_rx) = tokio::sync::mpsc::channel::<()>(1);
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    result = connection.recv() => {
+                        tokio::spawn(Self::bridge_inbound(error_tx.clone(), database.clone(), sender.clone(), result));
+                    }
+                    _ = quit_rx.recv() => {
+                        debug!("quit received");
+                        return;
+                    }
+                }
+            }
+        });
+        quit_tx
+    }
+
+    /// Bridges outbounds bevy-tokio runtime using channels.
+    #[instrument(
+        name = "network_endpoint_bridge_outbounds",
+        skip(error_tx, database, connection, receiver),
+        fields(
+            id = connection.id(),
+            remote_address =% connection.remote_address()
+        )
+    )]
+    fn bridge_outbounds(
+        error_tx: tokio::sync::mpsc::UnboundedSender<()>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        connection: Connection,
+        mut receiver: tokio::sync::mpsc::UnboundedReceiver<NetworkSend>,
+    ) -> tokio::sync::mpsc::Sender<()> {
+        let (quit_tx, mut quit_rx) = tokio::sync::mpsc::channel::<()>(1);
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    result = receiver.recv() => {
+                        tokio::spawn(Self::bridge_outbound(error_tx.clone(), database.clone(), connection.clone(), result));
+                    }
+                    _ = quit_rx.recv() => {
+                        debug!("quit received");
+                        return;
+                    }
+                }
+            }
+        });
+        quit_tx
+    }
+
+    /// Bridges inbound bevy-tokio runtime using channels.
+    #[instrument(
+        name = "network_endpoint_bridge_inbound",
+        skip(error_tx, database, sender, result)
+    )]
+    async fn bridge_inbound(
+        error_tx: tokio::sync::mpsc::UnboundedSender<()>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        sender: std::sync::mpsc::Sender<NetworkRecv>,
+        result: Result<Payload, RecvError>,
+    ) {
+        let payload = match result {
+            Ok(payload) => payload,
+            Err(error) => {
+                warn!(error =? error, "bridge error");
+                if error_tx.send(()).is_err() {
+                    warn!("failed to communicate error");
+                }
+                return;
+            }
+        };
+
+        if let Some(sender) = database.lock().await.remove(&payload.id) {
+            if sender.send(payload).is_err() {
+                // the actor who sent the blocking request is no longer interested in the response.
+                warn!("failed to route payload to blocking channel");
+            }
+            return;
+        }
+
+        if sender.send(NetworkRecv::NonBlocking { payload }).is_err() {
+            warn!("failed to route payload to non-blocking channel");
+            if error_tx.send(()).is_err() {
+                warn!("failed to communicate error");
+            }
+        }
+    }
+
+    /// Bridges outbound bevy-tokio runtime using channels.
+    #[instrument(
+        name = "network_endpoint_bridge_outbound",
+        skip(error_tx, database, connection, result),
+        fields(
+            id = connection.id(),
+            remote_address =% connection.remote_address()
+        )
+    )]
+    async fn bridge_outbound(
+        error_tx: tokio::sync::mpsc::UnboundedSender<()>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        connection: Connection,
+        result: Option<NetworkSend>,
+    ) {
+        let Some(network_send) = result else {
+            warn!("bridge error");
+            if error_tx.send(()).is_err() {
+                warn!("failed to communicate error");
+            }
+            return;
+        };
+
+        let (payload, blocking) = match network_send {
+            NetworkSend::Blocking { payload, sender } => {
+                let id = payload.id.clone();
+                (payload, Some((id, sender)))
+            }
+            NetworkSend::NonBlocking { payload } => (payload, None),
+        };
+
+        if connection.send(payload).await.is_err() {
+            warn!("failed to route payload to connection");
+            if error_tx.send(()).is_err() {
+                warn!("failed to communicate error");
+            }
+            return;
+        }
+
+        if let Some((id, sender)) = blocking {
+            database.lock().await.insert(id, sender);
+        }
     }
 }
 
@@ -327,14 +445,14 @@ pub enum NetworkSend {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Resource)]
 pub struct NetworkServer {
-    receiver: Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
+    receiver: std::sync::Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
 }
 
 impl NetworkServer {
     /// Creates a new [`NetworkServer`].
     fn new(receiver: std::sync::mpsc::Receiver<NetworkEndpoint>) -> Self {
         Self {
-            receiver: Mutex::new(receiver),
+            receiver: std::sync::Mutex::new(receiver),
         }
     }
 

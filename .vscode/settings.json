@@ -9,6 +9,7 @@
     "despawns",
     "libasound",
     "libudev",
+    "outbounds",
     "pkcs",
     "rcgen",
     "rustls",
