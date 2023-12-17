@@ -28,6 +28,10 @@ lint-format:
 run-ai:
   @cargo run -p chaos-symphony-ai
 
+# run-client
+run-client:
+  @cargo run -p chaos-symphony
+
 # run replication
 run-replication:
   @cargo run -p chaos-symphony-replication

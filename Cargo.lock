@@ -1253,6 +1253,10 @@ name = "chaos-symphony"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "chaos-symphony-ecs",
+ "chaos-symphony-network-bevy",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1260,11 +1264,8 @@ name = "chaos-symphony-ai"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "chaos-symphony-async",
  "chaos-symphony-ecs",
- "chaos-symphony-network",
  "chaos-symphony-network-bevy",
- "chaos-symphony-protocol",
  "tokio",
  "tracing",
 ]
@@ -1328,8 +1329,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "chaos-symphony-ecs",
- "chaos-symphony-network",
  "chaos-symphony-network-bevy",
+ "chaos-symphony-protocol",
  "tokio",
  "tracing",
 ]
@@ -1339,11 +1340,8 @@ name = "chaos-symphony-simulation"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "chaos-symphony-async",
  "chaos-symphony-ecs",
- "chaos-symphony-network",
  "chaos-symphony-network-bevy",
- "chaos-symphony-protocol",
  "tokio",
  "tracing",
 ]
