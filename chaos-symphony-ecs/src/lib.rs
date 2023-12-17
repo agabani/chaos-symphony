@@ -3,6 +3,8 @@
 
 //! Chaos Symphony ECS
 
+/// Network Authenticate.
+pub mod network_authenticate;
 /// Network Connect.
 pub mod network_connect;
 /// Network Disconnect.

@@ -34,7 +34,7 @@ fn connect(
 
 /// Connecting.
 ///
-/// Manages [`Connecting`] lifetime
+/// Manages [`Connecting`] lifetime.
 ///
 /// - On success, spawns [`NetworkEndpoint`].
 /// - On ready, despawns [`Connecting`].
