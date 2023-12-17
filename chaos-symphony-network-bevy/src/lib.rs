@@ -9,7 +9,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc::TryRecvError,
-        Arc, Mutex,
+        Arc,
     },
 };
 
@@ -132,8 +132,8 @@ impl NetworkClient {
 pub struct NetworkEndpoint {
     id: usize,
     is_disconnected: std::sync::atomic::AtomicBool,
-    receiver: Arc<Mutex<std::sync::mpsc::Receiver<NetworkRecv>>>,
-    remote_address: std::net::SocketAddr,
+    receiver: Arc<std::sync::Mutex<std::sync::mpsc::Receiver<NetworkRecv>>>,
+    remote_address: SocketAddr,
     sender: tokio::sync::mpsc::UnboundedSender<NetworkSend>,
 }
 
@@ -148,7 +148,7 @@ impl NetworkEndpoint {
         Self {
             id: connection.id(),
             is_disconnected: AtomicBool::new(false),
-            receiver: Arc::new(Mutex::new(receiver)),
+            receiver: Arc::new(std::sync::Mutex::new(receiver)),
             remote_address: connection.remote_address(),
             sender,
         }
@@ -242,53 +242,103 @@ impl NetworkEndpoint {
     ) {
         debug!("connected");
 
-        let mut blocking = HashMap::<String, std::sync::mpsc::Sender<Payload>>::new();
+        let blocking = Arc::new(tokio::sync::Mutex::new(HashMap::<
+            String,
+            std::sync::mpsc::Sender<Payload>,
+        >::new()));
+        let (error_tx, mut error_rx) = tokio::sync::mpsc::unbounded_channel::<()>();
 
-        loop {
-            tokio::select! {
-                result = connection.recv() => {
-                    // inbound traffic
-                    match result {
-                        Ok(payload) =>  {
-                            if let Some(sender) = blocking.remove(&payload.id) {
-                                if sender.send(payload).is_err() {
-                                    break;
-                                }
-                            } else if sender.send(NetworkRecv::NonBlocking{ payload }).is_err() {
-                                break;
-                            }
-                        },
-                        Err(_) => {
-                            break;
-                        },
-                    };
-                }
-                result = receiver.recv() => {
-                    // outbound traffic
-                    match result {
-                        Some(instruction) => {
-                            match instruction {
-                                NetworkSend::Blocking { payload, sender } => {
-                                    let id = payload.id.clone();
-                                    if connection.send(payload).await.is_err() {
-                                        break;
-                                    }
-                                    blocking.insert(id, sender);
-                                },
-                                NetworkSend::NonBlocking{ payload } => {
-                                    if connection.send(payload).await.is_err() {
-                                        break;
+        let (quit_inbound, mut quit_rx) = tokio::sync::mpsc::channel::<()>(1);
+        {
+            let blocking = blocking.clone();
+            let connection = connection.clone();
+            let error_tx = error_tx.clone();
+            tokio::spawn(async move {
+                loop {
+                    tokio::select! {
+                        result = connection.recv() => {
+                            match result {
+                                Ok(payload) => {
+                                    if let Some(sender) = blocking.lock().await.remove(&payload.id) {
+                                        if sender.send(payload).is_err() {
+                                            // the actor who sent the blocking request is no longer interested in the response.
+                                            warn!("failed to route payload to blocking channel");
+                                        }
+                                    } else if sender.send(NetworkRecv::NonBlocking { payload }).is_err() {
+                                        warn!("failed to route payload to non-blocking channel");
+                                        if error_tx.send(()).is_err() {
+                                            warn!("failed to communicate error");
+                                        }
+                                        return;
                                     }
                                 },
+                                Err(error) => {
+                                    warn!(error =? error, "inbound connection error");
+                                    if error_tx.send(()).is_err() {
+                                        warn!("failed to communicate error");
+                                    }
+                                    return;
+                                },
                             }
-                        },
-                        None => {
-                            break;
-                        },
-                    };
+                        }
+                        _ = quit_rx.recv() => {
+                            debug!("inbound quit received");
+                            return;
+                        }
+                    }
                 }
-            }
+            });
         }
+
+        let (quit_outbound, mut quit_rx) = tokio::sync::mpsc::channel::<()>(1);
+        {
+            tokio::spawn(async move {
+                loop {
+                    tokio::select! {
+                        result = receiver.recv() => {
+                            if let Some(network_send) = result {
+                                match network_send {
+                                    NetworkSend::Blocking { payload, sender } => {
+                                        let id = payload.id.clone();
+                                        if connection.send(payload).await.is_err() {
+                                            warn!("failed to route payload to connection");
+                                            if error_tx.send(()).is_err() {
+                                                warn!("failed to communicate error");
+                                            }
+                                            return;
+                                        }
+                                        blocking.lock().await.insert(id, sender);
+                                    },
+                                    NetworkSend::NonBlocking { payload } => {
+                                        if connection.send(payload).await.is_err() {
+                                            warn!("failed to route payload to connection");
+                                            if error_tx.send(()).is_err() {
+                                                warn!("failed to communicate error");
+                                            }
+                                            return;
+                                        }
+                                    },
+                                }
+                            } else {
+                                warn!("inbound bridge error");
+                                if error_tx.send(()).is_err() {
+                                    warn!("failed to communicate error");
+                                }
+                                return;
+                            }
+                        }
+                        _ = quit_rx.recv() => {
+                            debug!("outbound quit received");
+                            return;
+                        }
+                    }
+                }
+            });
+        }
+
+        error_rx.recv().await;
+        drop(quit_inbound);
+        drop(quit_outbound);
 
         debug!("disconnected");
     }
@@ -327,14 +377,14 @@ pub enum NetworkSend {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Resource)]
 pub struct NetworkServer {
-    receiver: Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
+    receiver: std::sync::Mutex<std::sync::mpsc::Receiver<NetworkEndpoint>>,
 }
 
 impl NetworkServer {
     /// Creates a new [`NetworkServer`].
     fn new(receiver: std::sync::mpsc::Receiver<NetworkEndpoint>) -> Self {
         Self {
-            receiver: Mutex::new(receiver),
+            receiver: std::sync::Mutex::new(receiver),
         }
     }
 
