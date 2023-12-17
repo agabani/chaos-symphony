@@ -6,7 +6,8 @@
 use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
-    network_connect::NetworkConnectPlugin, network_keep_alive::NetworkKeepAlivePlugin,
+    network_connect::NetworkConnectPlugin, network_disconnect::NetworkDisconnectPlugin,
+    network_keep_alive::NetworkKeepAlivePlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::{AuthenticateRequest, Authenticating};
@@ -22,7 +23,7 @@ async fn main() {
                 "info",
                 "chaos_symphony_ai=debug",
                 "chaos_symphony_ecs=debug",
-                "chaos_symphony_bevy_network=debug",
+                "chaos_symphony_network_bevy=debug",
                 "wgpu_core=warn",
                 "wgpu_hal=warn",
             ]
@@ -36,6 +37,7 @@ async fn main() {
             server: false,
         },
         NetworkConnectPlugin,
+        NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
     .add_systems(Update, (authenticate, authenticating, recv));

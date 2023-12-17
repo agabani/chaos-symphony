@@ -5,5 +5,7 @@
 
 /// Network Connect.
 pub mod network_connect;
+/// Network Disconnect.
+pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;

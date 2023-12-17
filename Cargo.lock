@@ -1327,6 +1327,7 @@ name = "chaos-symphony-replication"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "chaos-symphony-ecs",
  "chaos-symphony-network",
  "chaos-symphony-network-bevy",
  "tokio",

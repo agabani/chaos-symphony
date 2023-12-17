@@ -8,7 +8,7 @@ pub struct NetworkConnectPlugin;
 
 impl Plugin for NetworkConnectPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (connect, connecting, disconnected));
+        app.add_systems(Update, (connect, connecting));
     }
 }
 
@@ -69,22 +69,6 @@ fn connecting(mut commands: Commands, connectings: Query<(Entity, &Connecting)>)
                 info_span!("connecting", entity =? entity, id, remote_address =% remote_address);
             let _guard = span.enter();
             info!("connected");
-        }
-    });
-}
-
-/// Disconnected.
-///
-/// Despawns disconnected [`NetworkEndpoint`].
-#[allow(clippy::needless_pass_by_value)]
-fn disconnected(mut commands: Commands, endpoints: Query<(Entity, &NetworkEndpoint)>) {
-    endpoints.for_each(|(entity, endpoint)| {
-        let span = info_span!("disconnected", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
-        let _guard = span.enter();
-
-        if endpoint.is_disconnected() {
-            commands.entity(entity).despawn();
-            info!("disconnected");
         }
     });
 }
