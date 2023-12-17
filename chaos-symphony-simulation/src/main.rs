@@ -5,10 +5,10 @@
 
 use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
-use chaos_symphony_ecs::network_keep_alive::NetworkKeepAlivePlugin;
-use chaos_symphony_network_bevy::{
-    Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv,
+use chaos_symphony_ecs::{
+    network_connect::NetworkConnectPlugin, network_keep_alive::NetworkKeepAlivePlugin,
 };
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::{AuthenticateRequest, Authenticating};
 
 #[tokio::main]
@@ -21,6 +21,7 @@ async fn main() {
             filter: [
                 "info",
                 "chaos_symphony_bevy_network=debug",
+                "chaos_symphony_ecs=debug",
                 "chaos_symphony_simulation=debug",
                 "wgpu_core=warn",
                 "wgpu_hal=warn",
@@ -34,19 +35,10 @@ async fn main() {
             client: true,
             server: false,
         },
+        NetworkConnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(
-        Update,
-        (
-            authenticate,
-            authenticating,
-            connect,
-            connecting,
-            disconnected,
-            recv,
-        ),
-    );
+    .add_systems(Update, (authenticate, authenticating, recv));
 
     app.run();
 }
@@ -92,71 +84,6 @@ fn authenticating(mut commands: Commands, authenticatings: Query<(Entity, &Authe
                 success = response.success,
                 "authenticating"
             );
-        }
-    });
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn connect(
-    mut commands: Commands,
-    client: Res<NetworkClient>,
-    connectings: Query<(), With<Connecting>>,
-    endpoints: Query<(), With<NetworkEndpoint>>,
-) {
-    let connections = connectings.iter().count() + endpoints.iter().count();
-    for _ in connections..1 {
-        if let Ok(connecting) = client.connect() {
-            commands.spawn(connecting);
-        } else {
-            error!("failed to initiate connect");
-        }
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn connecting(mut commands: Commands, connectings: Query<(Entity, &Connecting)>) {
-    connectings.for_each(|(entity, connecting)| {
-        if let Poll::Ready(result) = connecting.try_poll() {
-            commands.entity(entity).despawn();
-
-            let result = match result {
-                Ok(result) => result,
-                Err(error) => {
-                    error!(error =? error, "failed to connect");
-                    return;
-                }
-            };
-
-            let endpoint = match result {
-                Ok(result) => result,
-                Err(error) => {
-                    error!(error =? error, "failed to connect");
-                    return;
-                }
-            };
-
-            let id = endpoint.id();
-            let remote_address = endpoint.remote_address();
-
-            let entity = commands.spawn(endpoint).id();
-
-            let span =
-                info_span!("connecting", entity =? entity, id, remote_address =% remote_address);
-            let _guard = span.enter();
-            info!("connected");
-        }
-    });
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn disconnected(mut commands: Commands, endpoints: Query<(Entity, &NetworkEndpoint)>) {
-    endpoints.for_each(|(entity, endpoint)| {
-        let span = info_span!("disconnected", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
-        let _guard = span.enter();
-
-        if endpoint.is_disconnected() {
-            commands.entity(entity).despawn_recursive();
-            info!("disconnected");
         }
     });
 }
