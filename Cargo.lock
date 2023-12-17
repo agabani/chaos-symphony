@@ -1304,7 +1304,11 @@ version = "0.1.0"
 name = "chaos-symphony-protocol"
 version = "0.1.0"
 dependencies = [
+ "bevy",
+ "chaos-symphony-async",
+ "chaos-symphony-bevy-network",
  "chaos-symphony-network",
+ "tokio",
 ]
 
 [[package]]
