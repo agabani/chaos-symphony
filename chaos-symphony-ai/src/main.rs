@@ -5,7 +5,7 @@
 
 use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
-use chaos_symphony_bevy_network::{
+use chaos_symphony_network_bevy::{
     Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv,
 };
 use chaos_symphony_protocol::{AuthenticateRequest, Authenticating, Ping};

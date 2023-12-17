@@ -6,8 +6,8 @@
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
-use chaos_symphony_bevy_network::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use chaos_symphony_network::Payload;
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 
 #[tokio::main]
 async fn main() {
