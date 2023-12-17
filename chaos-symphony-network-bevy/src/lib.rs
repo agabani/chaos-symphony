@@ -1,7 +1,7 @@
 #![deny(clippy::pedantic, missing_docs)]
 #![forbid(unsafe_code)]
 
-//! Chaos Symphony Bevy Network
+//! Chaos Symphony Network Bevy
 
 use std::{
     collections::HashMap,

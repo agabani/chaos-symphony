@@ -7,8 +7,8 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_bevy_network::{NetworkEndpoint, NetworkSend};
 use chaos_symphony_network::Payload;
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
 /// Authenticate Request
 pub struct AuthenticateRequest {
