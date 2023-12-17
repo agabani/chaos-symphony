@@ -5,10 +5,11 @@
 
 use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
+use chaos_symphony_ecs::network_keep_alive::NetworkKeepAlivePlugin;
 use chaos_symphony_network_bevy::{
     Connecting, NetworkClient, NetworkEndpoint, NetworkPlugin, NetworkRecv,
 };
-use chaos_symphony_protocol::{AuthenticateRequest, Authenticating, Ping};
+use chaos_symphony_protocol::{AuthenticateRequest, Authenticating};
 
 #[tokio::main]
 async fn main() {
@@ -28,11 +29,13 @@ async fn main() {
             level: bevy::log::Level::DEBUG,
         },
     ))
-    .add_plugins(NetworkPlugin {
-        client: true,
-        server: false,
-    })
-    .insert_resource(KeepAliveTimer::new())
+    .add_plugins((
+        NetworkPlugin {
+            client: true,
+            server: false,
+        },
+        NetworkKeepAlivePlugin,
+    ))
     .add_systems(
         Update,
         (
@@ -41,7 +44,6 @@ async fn main() {
             connect,
             connecting,
             disconnected,
-            keep_alive,
             recv,
         ),
     );
@@ -173,47 +175,4 @@ fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
             }
         }
     });
-}
-
-/// Keep Alive Timer.
-#[derive(Resource)]
-struct KeepAliveTimer {
-    inner: Timer,
-}
-
-impl KeepAliveTimer {
-    /// Creates a new [`KeepAliveTimer`].
-    fn new() -> Self {
-        Self {
-            inner: Timer::new(std::time::Duration::from_secs(1), TimerMode::Repeating),
-        }
-    }
-}
-
-/// Keeps connection alive by periodically sending pings.
-#[allow(clippy::needless_pass_by_value)]
-fn keep_alive(
-    time: Res<Time>,
-    mut timer: ResMut<KeepAliveTimer>,
-    query: Query<(Entity, &NetworkEndpoint)>,
-) {
-    if timer.inner.tick(time.delta()).just_finished() {
-        query.for_each(|(entity, endpoint)| {
-            let ping = Ping {
-                id: Uuid::new_v4().to_string(),
-            };
-
-            if ping.try_send(endpoint).is_err() {
-                let span = warn_span!(
-                    "keep_alive",
-                    entity =? entity,
-                    id = endpoint.id(),
-                    remote_address =% endpoint.remote_address()
-                );
-                let _guard = span.enter();
-
-                warn!("unable to send ping");
-            };
-        });
-    }
 }

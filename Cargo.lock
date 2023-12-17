@@ -1261,6 +1261,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "chaos-symphony-async",
+ "chaos-symphony-ecs",
  "chaos-symphony-network",
  "chaos-symphony-network-bevy",
  "chaos-symphony-protocol",
@@ -1271,6 +1272,15 @@ dependencies = [
 [[package]]
 name = "chaos-symphony-async"
 version = "0.1.0"
+
+[[package]]
+name = "chaos-symphony-ecs"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "chaos-symphony-network-bevy",
+ "chaos-symphony-protocol",
+]
 
 [[package]]
 name = "chaos-symphony-network"
@@ -1328,6 +1338,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "chaos-symphony-async",
+ "chaos-symphony-ecs",
  "chaos-symphony-network",
  "chaos-symphony-network-bevy",
  "chaos-symphony-protocol",
