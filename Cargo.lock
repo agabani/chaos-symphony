@@ -1266,6 +1266,7 @@ dependencies = [
  "bevy",
  "chaos-symphony-ecs",
  "chaos-symphony-network-bevy",
+ "chaos-symphony-protocol",
  "tokio",
  "tracing",
 ]
@@ -1282,6 +1283,7 @@ dependencies = [
  "chaos-symphony-async",
  "chaos-symphony-network-bevy",
  "chaos-symphony-protocol",
+ "tracing",
 ]
 
 [[package]]

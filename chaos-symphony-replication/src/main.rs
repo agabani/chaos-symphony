@@ -6,9 +6,12 @@
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
-use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
+use chaos_symphony_ecs::{
+    authority::{ClientAuthority, ServerAuthority},
+    network_disconnect::NetworkDisconnectPlugin,
+};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::AuthenticateResponse;
+use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateResponse};
 
 #[tokio::main]
 async fn main() {
@@ -67,7 +70,7 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
+fn recv(mut commands: Commands, endpoints: Query<(Entity, &NetworkEndpoint)>) {
     endpoints.for_each(|(entity, endpoint)| {
         let span = info_span!("recv", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
         let _guard = span.enter();
@@ -78,14 +81,29 @@ fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
                     info!("recv: {payload:?}");
 
                     if payload.endpoint == "/request/authenticate" {
+                        let request = AuthenticateRequest::from(payload);
+
+                        let identity = request.identity;
+
                         let response = AuthenticateResponse {
-                            id: payload.id,
-                            success: true
+                            id: request.id,
+                            success: true,
+                            identity: identity.clone(),
                         };
 
                         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {
                             warn!(error =? error, "unable to send authenticate response");
                         }
+
+                        match identity.as_str() {
+                            "ai" | "client" => {
+                                commands.entity(entity).insert(ClientAuthority::new(identity));
+                            },
+                            "simulation" => {
+                                commands.entity(entity).insert(ServerAuthority::new(identity));
+                            },
+                            identity => todo!("{identity}")
+                        };
                     }
                 }
             }
