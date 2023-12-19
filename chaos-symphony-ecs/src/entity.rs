@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
-/// Identifier.
-#[derive(Component)]
-pub struct Identifier {
+/// Identity.
+#[derive(Debug, Component)]
+pub struct Identity {
     inner: String,
 }
 
-impl Identifier {
-    /// Creates a new [`Identifier`].
+impl Identity {
+    /// Creates a new [`Identity`].
     #[must_use]
     pub fn new(id: String) -> Self {
         Self { inner: id }

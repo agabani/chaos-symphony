@@ -4,10 +4,15 @@
 //! Chaos Symphony AI
 
 use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
+use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
-    authority::ClientAuthority, network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin, network_disconnect::NetworkDisconnectPlugin,
-    network_keep_alive::NetworkKeepAlivePlugin, ship::Ship,
+    authority::{ClientAuthority, ServerAuthority},
+    entity::Identity,
+    network_authenticate::NetworkAuthenticatePlugin,
+    network_connect::NetworkConnectPlugin,
+    network_disconnect::NetworkDisconnectPlugin,
+    network_keep_alive::NetworkKeepAlivePlugin,
+    ship::Ship,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawning};
@@ -44,7 +49,7 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(Update, (recv, spawn_ship));
+    .add_systems(Update, (recv, ship_spawn, ship_spawning));
 
     app.run();
 }
@@ -66,18 +71,19 @@ fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
 }
 
 #[instrument(skip_all)]
-fn spawn_ship(
+fn ship_spawn(
     mut commands: Commands,
-    endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
+    endpoints: Query<(&NetworkEndpoint, &ClientAuthority)>,
     ships: Query<(), With<Ship>>,
     ship_spawning: Query<(), With<ShipSpawning>>,
 ) {
-    if let Some(endpoint) = endpoints.iter().next() {
+    if let Some((endpoint, client_authority)) = endpoints.iter().next() {
         let count = ships.iter().count() + ship_spawning.iter().count();
 
         for _ in count..1 {
             let request = ShipSpawnRequest {
                 id: Uuid::new_v4().to_string(),
+                client_authority: None,
             };
 
             let span = error_span!("request", request =? request);
@@ -85,10 +91,45 @@ fn spawn_ship(
 
             if let Ok(ship_spawning) = request.try_send(endpoint) {
                 info!("success");
-                commands.spawn(ship_spawning);
+                commands.spawn((client_authority.clone(), ship_spawning));
             } else {
                 error!("failed");
             }
         }
     }
+}
+
+#[instrument(skip_all)]
+fn ship_spawning(mut commands: Commands, ship_spawnings: Query<(Entity, &ShipSpawning)>) {
+    ship_spawnings.for_each(|(entity, ship_spawning)| {
+        if let Poll::Ready(result) = ship_spawning.try_poll() {
+            let response = match result {
+                Ok(response) => {
+                    commands.entity(entity).remove::<ShipSpawning>();
+                    response
+                }
+                Err(error) => {
+                    error!(error =? error, "network");
+                    commands.entity(entity).despawn();
+                    return;
+                }
+            };
+
+            if !response.success {
+                error!("failed");
+                commands.entity(entity).despawn();
+                return;
+            }
+
+            let identity = Identity::new(response.identity);
+            info!(identity =? identity, "spawned");
+
+            commands.spawn((
+                ClientAuthority::new(response.client_authority.unwrap()),
+                ServerAuthority::new(response.server_authority.unwrap()),
+                identity,
+                Ship,
+            ));
+        }
+    });
 }

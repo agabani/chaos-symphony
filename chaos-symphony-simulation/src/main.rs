@@ -3,12 +3,19 @@
 
 //! Chaos Symphony Simulation
 
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
-    network_authenticate::NetworkAuthenticatePlugin, network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin, network_keep_alive::NetworkKeepAlivePlugin,
+    authority::{ClientAuthority, ServerAuthority},
+    entity::Identity,
+    network_authenticate::NetworkAuthenticatePlugin,
+    network_connect::NetworkConnectPlugin,
+    network_disconnect::NetworkDisconnectPlugin,
+    network_keep_alive::NetworkKeepAlivePlugin,
+    ship::Ship,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
+use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnResponse};
+use tracing::instrument;
 
 #[tokio::main]
 async fn main() {
@@ -41,21 +48,72 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(Update, recv);
+    .add_systems(Update, router);
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
-    endpoints.for_each(|(entity, endpoint)| {
-        let span = info_span!("recv", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
+#[instrument(skip_all)]
+fn router(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, &ServerAuthority)>) {
+    endpoints.for_each(|(endpoint, server_authority)| {
+        let span = error_span!(
+        "router",
+            id = endpoint.id(),
+            remote_address =% endpoint.remote_address()
+        );
         let _guard = span.enter();
 
         while let Ok(payload) = endpoint.try_recv() {
-            match payload {
-                NetworkRecv::NonBlocking { payload } => {
-                    info!("recv: {payload:?}");
+            let NetworkRecv::NonBlocking { payload } = payload;
+
+            match payload.endpoint.as_str() {
+                "/request/ship_spawn" => {
+                    let request = ShipSpawnRequest::from(payload);
+
+                    info!(request =? request, "request");
+
+                    let Some(client_authority) = request.client_authority else {
+                        error!("no client authority");
+
+                        let response = ShipSpawnResponse {
+                            id: request.id,
+                            success: false,
+                            identity: String::new(),
+                            client_authority: None,
+                            server_authority: None,
+                        };
+
+                        if response.try_send(endpoint).is_err() {
+                            warn!("failed to send error");
+                        }
+
+                        continue;
+                    };
+
+                    let client_authority = ClientAuthority::new(client_authority);
+                    let server_authority = server_authority.clone();
+                    let identity = Identity::new(Uuid::new_v4().to_string());
+                    let ship = Ship;
+
+                    let response = ShipSpawnResponse {
+                        id: request.id,
+                        success: true,
+                        identity: identity.id().to_string(),
+                        client_authority: None,
+                        server_authority: None,
+                    };
+
+                    if response.try_send(endpoint).is_err() {
+                        warn!("failed to send success");
+                        continue;
+                    }
+
+                    info!(identity =? identity, "spawned");
+                    commands.spawn((client_authority, server_authority, identity, ship));
+                }
+                endpoint => {
+                    warn!(endpoint, "unhandled");
                 }
             }
         }
