@@ -1333,6 +1333,7 @@ dependencies = [
  "bevy",
  "chaos-symphony-async",
  "chaos-symphony-ecs",
+ "chaos-symphony-network",
  "chaos-symphony-network-bevy",
  "chaos-symphony-protocol",
  "tokio",
