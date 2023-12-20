@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::authority::{ClientAuthority, ServerAuthority};
+use chaos_symphony_ecs::{
+    authority::{ClientAuthority, ServerAuthority},
+    routing::{EndpointId, Request},
+};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateResponse};
 use tracing::instrument;
-
-use crate::{EndpointId, Request};
 
 #[instrument(skip_all)]
 pub fn request(

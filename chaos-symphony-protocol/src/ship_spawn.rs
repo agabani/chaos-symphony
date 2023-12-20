@@ -13,10 +13,23 @@ pub struct ShipSpawnRequest {
     pub id: String,
 
     /// Client Authority.
-    pub client_authority: Option<String>,
+    pub client_authority: String,
+
+    /// Server Authority.
+    pub server_authority: String,
 }
 
 impl ShipSpawnRequest {
+    /// Creates a new [`ShipSpawnRequest`].
+    #[must_use]
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+            client_authority: String::new(),
+            server_authority: String::new(),
+        }
+    }
+
     /// Try send.
     ///
     /// # Errors
@@ -35,7 +48,14 @@ impl ShipSpawnRequest {
     /// With Client Authority.
     #[must_use]
     pub fn with_client_authority(mut self, client_authority: String) -> Self {
-        self.client_authority = Some(client_authority);
+        self.client_authority = client_authority;
+        self
+    }
+
+    /// With Server Authority.
+    #[must_use]
+    pub fn with_server_authority(mut self, server_authority: String) -> Self {
+        self.server_authority = server_authority;
         self
     }
 }
@@ -44,14 +64,8 @@ impl From<Payload> for ShipSpawnRequest {
     fn from(mut value: Payload) -> Self {
         Self {
             id: value.id,
-            client_authority: {
-                let value = value.properties.remove("client_authority").unwrap();
-                if value.is_empty() {
-                    None
-                } else {
-                    Some(value)
-                }
-            },
+            client_authority: value.properties.remove("client_authority").unwrap(),
+            server_authority: value.properties.remove("server_authority").unwrap(),
         }
     }
 }
@@ -61,10 +75,10 @@ impl From<ShipSpawnRequest> for Payload {
         Self {
             id: value.id,
             endpoint: "/request/ship_spawn".to_string(),
-            properties: HashMap::from([(
-                "client_authority".to_string(),
-                value.client_authority.unwrap_or_default(),
-            )]),
+            properties: HashMap::from([
+                ("client_authority".to_string(), value.client_authority),
+                ("server_authority".to_string(), value.server_authority),
+            ]),
         }
     }
 }
@@ -82,13 +96,25 @@ pub struct ShipSpawnResponse {
     pub identity: String,
 
     /// Client Authority.
-    pub client_authority: Option<String>,
+    pub client_authority: String,
 
     /// Server Authority.
-    pub server_authority: Option<String>,
+    pub server_authority: String,
 }
 
 impl ShipSpawnResponse {
+    /// Creates a new [`ShipSpawnResponse`].
+    #[must_use]
+    pub fn error(id: String) -> Self {
+        Self {
+            id,
+            success: false,
+            identity: String::new(),
+            client_authority: String::new(),
+            server_authority: String::new(),
+        }
+    }
+
     /// Try send.
     ///
     /// # Errors
@@ -104,14 +130,14 @@ impl ShipSpawnResponse {
     /// With Client Authority.
     #[must_use]
     pub fn with_client_authority(mut self, client_authority: String) -> Self {
-        self.client_authority = Some(client_authority);
+        self.client_authority = client_authority;
         self
     }
 
     /// With Server Authority.
     #[must_use]
     pub fn with_server_authority(mut self, server_authority: String) -> Self {
-        self.server_authority = Some(server_authority);
+        self.server_authority = server_authority;
         self
     }
 }
@@ -122,22 +148,8 @@ impl From<Payload> for ShipSpawnResponse {
             id: value.id,
             success: value.properties.remove("success").unwrap().parse().unwrap(),
             identity: value.properties.remove("identity").unwrap(),
-            client_authority: {
-                let value = value.properties.remove("client_authority").unwrap();
-                if value.is_empty() {
-                    None
-                } else {
-                    Some(value)
-                }
-            },
-            server_authority: {
-                let value = value.properties.remove("server_authority").unwrap();
-                if value.is_empty() {
-                    None
-                } else {
-                    Some(value)
-                }
-            },
+            client_authority: value.properties.remove("client_authority").unwrap(),
+            server_authority: value.properties.remove("server_authority").unwrap(),
         }
     }
 }
@@ -150,14 +162,8 @@ impl From<ShipSpawnResponse> for Payload {
             properties: HashMap::from([
                 ("success".to_string(), value.success.to_string()),
                 ("identity".to_string(), value.identity),
-                (
-                    "client_authority".to_string(),
-                    value.client_authority.unwrap_or_default(),
-                ),
-                (
-                    "server_authority".to_string(),
-                    value.server_authority.unwrap_or_default(),
-                ),
+                ("client_authority".to_string(), value.client_authority),
+                ("server_authority".to_string(), value.server_authority),
             ]),
         }
     }

@@ -15,5 +15,7 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
+/// Routing.
+pub mod routing;
 /// Ship.
 pub mod ship;
