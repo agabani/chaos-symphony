@@ -38,23 +38,17 @@ async fn main() {
             NetworkDisconnectPlugin,
             NetworkKeepAlivePlugin,
         ))
-        .add_systems(Update, recv);
+        .add_systems(Update, route);
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn recv(endpoints: Query<(Entity, &NetworkEndpoint)>) {
-    endpoints.for_each(|(entity, endpoint)| {
-        let span = info_span!("recv", entity =? entity, id = endpoint.id(), remote_address =% endpoint.remote_address());
-        let _guard = span.enter();
-
+fn route(endpoints: Query<&NetworkEndpoint>) {
+    endpoints.for_each(|endpoint| {
         while let Ok(payload) = endpoint.try_recv() {
-            match payload {
-                NetworkRecv::NonBlocking { payload } => {
-                    info!("recv: {payload:?}");
-                }
-            }
+            let NetworkRecv::NonBlocking { payload } = payload;
+            warn!(endpoint = payload.endpoint, "unhandled");
         }
     });
 }

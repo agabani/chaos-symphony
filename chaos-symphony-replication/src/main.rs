@@ -9,7 +9,10 @@ mod ship_spawn;
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{log::LogPlugin, prelude::*};
-use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
+use chaos_symphony_ecs::{
+    network_disconnect::NetworkDisconnectPlugin,
+    routing::{EndpointId, Request},
+};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use chaos_symphony_protocol::{AuthenticateRequest, ShipSpawnRequest};
 
@@ -113,16 +116,4 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
             }
         }
     });
-}
-
-/// Request.
-#[derive(Component)]
-struct Request<T> {
-    inner: T,
-}
-
-/// Endpoint Id.
-#[derive(Component)]
-struct EndpointId {
-    inner: usize,
 }
