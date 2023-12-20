@@ -7,7 +7,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
 /// Ship Spawn Request
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ShipSpawnRequest {
     /// Id.
     pub id: String,
@@ -26,9 +26,10 @@ impl ShipSpawnRequest {
         self,
         endpoint: &NetworkEndpoint,
     ) -> Result<ShipSpawning, tokio::sync::mpsc::error::SendError<NetworkSend>> {
+        let id = self.id.clone();
         endpoint
             .try_send_blocking(self.into())
-            .map(|future| ShipSpawning { inner: future })
+            .map(|future| ShipSpawning { id, inner: future })
     }
 
     /// With Client Authority.
@@ -165,6 +166,9 @@ impl From<ShipSpawnResponse> for Payload {
 /// Ship Spawning.
 #[derive(Component)]
 pub struct ShipSpawning {
+    /// Id.
+    pub id: String,
+
     inner: Future<Payload>,
 }
 
