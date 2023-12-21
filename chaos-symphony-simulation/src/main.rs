@@ -12,6 +12,7 @@ use chaos_symphony_ecs::{
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
     routing::{EndpointId, Request},
+    ship_spawn::ShipSpawnPlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest};
@@ -47,8 +48,9 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
+    .add_plugins(ShipSpawnPlugin)
     .add_systems(Update, route)
-    .add_systems(Update, (ship_spawn::event, ship_spawn::request));
+    .add_systems(Update, ship_spawn::request);
 
     app.run();
 }

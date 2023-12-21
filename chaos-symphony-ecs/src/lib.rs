@@ -19,3 +19,5 @@ pub mod network_keep_alive;
 pub mod routing;
 /// Ship.
 pub mod ship;
+/// Ship Spawn.
+pub mod ship_spawn;

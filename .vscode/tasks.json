@@ -1,0 +1,49 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "just: run",
+      "dependsOn": [
+        "just: run-replication",
+        "just: run-simulation",
+        "just: run-ai",
+        "just: run-client"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "just: run-ai",
+      "type": "shell",
+      "command": "just run-ai",
+      "presentation": {
+        "group": "run"
+      }
+    },
+    {
+      "label": "just: run-client",
+      "type": "shell",
+      "command": "just run-client",
+      "presentation": {
+        "group": "run"
+      }
+    },
+    {
+      "label": "just: run-replication",
+      "type": "shell",
+      "command": "just run-replication",
+      "presentation": {
+        "group": "run"
+      }
+    },
+    {
+      "label": "just: run-simulation",
+      "type": "shell",
+      "command": "just run-simulation",
+      "presentation": {
+        "group": "run"
+      }
+    }
+  ]
+}
