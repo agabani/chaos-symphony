@@ -1,10 +1,15 @@
-use bevy::{prelude::*, utils::Uuid};
+use bevy::{
+    math::{DQuat, DVec3},
+    prelude::*,
+    utils::Uuid,
+};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     entity::Identity,
     routing::{EndpointId, Request},
     ship::{Ship, ShipBundle},
+    transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest, ShipSpawnResponse, ShipSpawning};
@@ -74,6 +79,19 @@ pub fn callback(
                     identity: Identity::new(identity),
                     client_authority: client_authority.clone(),
                     server_authority: server_authority.clone(),
+                    transformation: Transformation {
+                        orientation: DQuat {
+                            x: response.orientation_x,
+                            y: response.orientation_y,
+                            z: response.orientation_z,
+                            w: response.orientation_w,
+                        },
+                        position: DVec3 {
+                            x: response.position_x,
+                            y: response.position_y,
+                            z: response.position_z,
+                        },
+                    },
                 });
 
                 let response = response
@@ -174,47 +192,69 @@ pub fn request(
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn broadcast(
-    ships: Query<(&Identity, &ClientAuthority, &ServerAuthority), Added<Ship>>,
+    ships: Query<
+        (
+            &Identity,
+            &ClientAuthority,
+            &ServerAuthority,
+            &Transformation,
+        ),
+        Added<Ship>,
+    >,
     client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
     server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
 ) {
-    ships.for_each(|(identity, client_authority, server_authority)| {
-        let span = error_span!("broadcast", identity_id = identity.id());
-        let _guard = span.enter();
+    ships.for_each(
+        |(identity, client_authority, server_authority, transformation)| {
+            let span = error_span!("broadcast", identity_id = identity.id());
+            let _guard = span.enter();
 
-        server_endpoints
-            .iter()
-            .chain(client_endpoints.iter())
-            .for_each(|endpoint| {
-                let id = Uuid::new_v4().to_string();
+            server_endpoints
+                .iter()
+                .chain(client_endpoints.iter())
+                .for_each(|endpoint| {
+                    let id = Uuid::new_v4().to_string();
 
-                let span = error_span!(
-                    "broadcast",
-                    endpoint_id = endpoint.id(),
-                    identity_id = identity.id(),
-                    request_id = id
-                );
-                let _guard = span.enter();
+                    let span = error_span!(
+                        "broadcast",
+                        endpoint_id = endpoint.id(),
+                        identity_id = identity.id(),
+                        request_id = id
+                    );
+                    let _guard = span.enter();
 
-                let event = ShipSpawnEvent {
-                    id,
-                    identity: identity.id().to_string(),
-                    client_authority: client_authority.id().to_string(),
-                    server_authority: server_authority.id().to_string(),
-                };
+                    let event = ShipSpawnEvent {
+                        id,
+                        identity: identity.id().to_string(),
+                        client_authority: client_authority.id().to_string(),
+                        server_authority: server_authority.id().to_string(),
+                        orientation_x: transformation.orientation.x,
+                        orientation_y: transformation.orientation.y,
+                        orientation_z: transformation.orientation.z,
+                        orientation_w: transformation.orientation.w,
+                        position_x: transformation.position.x,
+                        position_y: transformation.position.y,
+                        position_z: transformation.position.z,
+                    };
 
-                if event.try_send(endpoint).is_err() {
-                    warn!("failed to send event to client");
-                }
-            });
-    });
+                    if event.try_send(endpoint).is_err() {
+                        warn!("failed to send event to client");
+                    }
+                });
+        },
+    );
 }
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn replicate(
     client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
     server_endpoints: Query<&NetworkEndpoint, Added<ServerAuthority>>,
-    ships: Query<(&Identity, &ClientAuthority, &ServerAuthority)>,
+    ships: Query<(
+        &Identity,
+        &ClientAuthority,
+        &ServerAuthority,
+        &Transformation,
+    )>,
 ) {
     server_endpoints
         .iter()
@@ -223,27 +263,36 @@ pub fn replicate(
             let span = error_span!("replicate", endpoint_id = endpoint.id());
             let _guard = span.enter();
 
-            ships.for_each(|(identity, client_authority, server_authority)| {
-                let id = Uuid::new_v4().to_string();
+            ships.for_each(
+                |(identity, client_authority, server_authority, transformation)| {
+                    let id = Uuid::new_v4().to_string();
 
-                let span = error_span!(
-                    "replicate",
-                    endpoint_id = endpoint.id(),
-                    identity_id = identity.id(),
-                    request_id = id
-                );
-                let _guard = span.enter();
+                    let span = error_span!(
+                        "replicate",
+                        endpoint_id = endpoint.id(),
+                        identity_id = identity.id(),
+                        request_id = id
+                    );
+                    let _guard = span.enter();
 
-                let event = ShipSpawnEvent {
-                    id,
-                    identity: identity.id().to_string(),
-                    client_authority: client_authority.id().to_string(),
-                    server_authority: server_authority.id().to_string(),
-                };
+                    let event = ShipSpawnEvent {
+                        id,
+                        identity: identity.id().to_string(),
+                        client_authority: client_authority.id().to_string(),
+                        server_authority: server_authority.id().to_string(),
+                        orientation_x: transformation.orientation.x,
+                        orientation_y: transformation.orientation.y,
+                        orientation_z: transformation.orientation.z,
+                        orientation_w: transformation.orientation.w,
+                        position_x: transformation.position.x,
+                        position_y: transformation.position.y,
+                        position_z: transformation.position.z,
+                    };
 
-                if event.try_send(endpoint).is_err() {
-                    warn!("failed to send event to client");
-                }
-            });
+                    if event.try_send(endpoint).is_err() {
+                        warn!("failed to send event to client");
+                    }
+                },
+            );
         });
 }

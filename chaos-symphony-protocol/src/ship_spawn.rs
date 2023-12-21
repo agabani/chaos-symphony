@@ -19,6 +19,27 @@ pub struct ShipSpawnEvent {
 
     /// Server Authority.
     pub server_authority: String,
+
+    /// Orientation X.
+    pub orientation_x: f64,
+
+    /// Orientation Y.
+    pub orientation_y: f64,
+
+    /// Orientation Z.
+    pub orientation_z: f64,
+
+    /// Orientation W.
+    pub orientation_w: f64,
+
+    /// Position X.
+    pub position_x: f64,
+
+    /// Position Y.
+    pub position_y: f64,
+
+    /// Position Z.
+    pub position_z: f64,
 }
 
 impl ShipSpawnEvent {
@@ -42,6 +63,48 @@ impl From<Payload> for ShipSpawnEvent {
             identity: value.properties.remove("identity").unwrap(),
             client_authority: value.properties.remove("client_authority").unwrap(),
             server_authority: value.properties.remove("server_authority").unwrap(),
+            orientation_x: value
+                .properties
+                .remove("orientation_x")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_y: value
+                .properties
+                .remove("orientation_y")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_z: value
+                .properties
+                .remove("orientation_z")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_w: value
+                .properties
+                .remove("orientation_w")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_x: value
+                .properties
+                .remove("position_x")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_y: value
+                .properties
+                .remove("position_y")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_z: value
+                .properties
+                .remove("position_z")
+                .unwrap()
+                .parse()
+                .unwrap(),
         }
     }
 }
@@ -55,6 +118,13 @@ impl From<ShipSpawnEvent> for Payload {
                 ("identity".to_string(), value.identity),
                 ("client_authority".to_string(), value.client_authority),
                 ("server_authority".to_string(), value.server_authority),
+                ("orientation_x".to_string(), value.orientation_x.to_string()),
+                ("orientation_y".to_string(), value.orientation_y.to_string()),
+                ("orientation_z".to_string(), value.orientation_z.to_string()),
+                ("orientation_w".to_string(), value.orientation_w.to_string()),
+                ("position_x".to_string(), value.position_x.to_string()),
+                ("position_y".to_string(), value.position_y.to_string()),
+                ("position_z".to_string(), value.position_z.to_string()),
             ]),
         }
     }
@@ -155,6 +225,27 @@ pub struct ShipSpawnResponse {
 
     /// Server Authority.
     pub server_authority: String,
+
+    /// Orientation X.
+    pub orientation_x: f64,
+
+    /// Orientation Y.
+    pub orientation_y: f64,
+
+    /// Orientation Z.
+    pub orientation_z: f64,
+
+    /// Orientation W.
+    pub orientation_w: f64,
+
+    /// Position X.
+    pub position_x: f64,
+
+    /// Position Y.
+    pub position_y: f64,
+
+    /// Position Z.
+    pub position_z: f64,
 }
 
 impl ShipSpawnResponse {
@@ -167,6 +258,13 @@ impl ShipSpawnResponse {
             identity: String::new(),
             client_authority: String::new(),
             server_authority: String::new(),
+            orientation_x: 0.0,
+            orientation_y: 0.0,
+            orientation_z: 0.0,
+            orientation_w: 0.0,
+            position_x: 0.0,
+            position_y: 0.0,
+            position_z: 0.0,
         }
     }
 
@@ -205,6 +303,48 @@ impl From<Payload> for ShipSpawnResponse {
             identity: value.properties.remove("identity").unwrap(),
             client_authority: value.properties.remove("client_authority").unwrap(),
             server_authority: value.properties.remove("server_authority").unwrap(),
+            orientation_x: value
+                .properties
+                .remove("orientation_x")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_y: value
+                .properties
+                .remove("orientation_y")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_z: value
+                .properties
+                .remove("orientation_z")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            orientation_w: value
+                .properties
+                .remove("orientation_w")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_x: value
+                .properties
+                .remove("position_x")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_y: value
+                .properties
+                .remove("position_y")
+                .unwrap()
+                .parse()
+                .unwrap(),
+            position_z: value
+                .properties
+                .remove("position_z")
+                .unwrap()
+                .parse()
+                .unwrap(),
         }
     }
 }
@@ -219,6 +359,13 @@ impl From<ShipSpawnResponse> for Payload {
                 ("identity".to_string(), value.identity),
                 ("client_authority".to_string(), value.client_authority),
                 ("server_authority".to_string(), value.server_authority),
+                ("orientation_x".to_string(), value.orientation_x.to_string()),
+                ("orientation_y".to_string(), value.orientation_y.to_string()),
+                ("orientation_z".to_string(), value.orientation_z.to_string()),
+                ("orientation_w".to_string(), value.orientation_w.to_string()),
+                ("position_x".to_string(), value.position_x.to_string()),
+                ("position_y".to_string(), value.position_y.to_string()),
+                ("position_z".to_string(), value.position_z.to_string()),
             ]),
         }
     }
