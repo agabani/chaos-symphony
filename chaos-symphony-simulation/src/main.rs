@@ -14,7 +14,7 @@ use chaos_symphony_ecs::{
     routing::{EndpointId, Request},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::ShipSpawnRequest;
+use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest};
 
 #[tokio::main]
 async fn main() {
@@ -47,7 +47,8 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(Update, (route, ship_spawn::request));
+    .add_systems(Update, route)
+    .add_systems(Update, (ship_spawn::event, ship_spawn::request));
 
     app.run();
 }
@@ -58,6 +59,16 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(payload) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { payload } = payload;
             match payload.endpoint.as_str() {
+                "/event/ship_spawn" => {
+                    commands.spawn((
+                        EndpointId {
+                            inner: endpoint.id(),
+                        },
+                        Request {
+                            inner: ShipSpawnEvent::from(payload),
+                        },
+                    ));
+                }
                 "/request/ship_spawn" => {
                     commands.spawn((
                         EndpointId {

@@ -5,6 +5,61 @@ use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network::Payload;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
+/// Ship Spawn Event.
+#[allow(clippy::module_name_repetitions)]
+pub struct ShipSpawnEvent {
+    /// Id.
+    pub id: String,
+
+    /// Identity.
+    pub identity: String,
+
+    /// Client Authority.
+    pub client_authority: String,
+
+    /// Server Authority.
+    pub server_authority: String,
+}
+
+impl ShipSpawnEvent {
+    /// Try send.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected.
+    pub fn try_send(
+        self,
+        endpoint: &NetworkEndpoint,
+    ) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
+        endpoint.try_send_non_blocking(self.into())
+    }
+}
+
+impl From<Payload> for ShipSpawnEvent {
+    fn from(mut value: Payload) -> Self {
+        Self {
+            id: value.id,
+            identity: value.properties.remove("identity").unwrap(),
+            client_authority: value.properties.remove("client_authority").unwrap(),
+            server_authority: value.properties.remove("server_authority").unwrap(),
+        }
+    }
+}
+
+impl From<ShipSpawnEvent> for Payload {
+    fn from(value: ShipSpawnEvent) -> Self {
+        Self {
+            id: value.id,
+            endpoint: "/event/ship_spawn".to_string(),
+            properties: HashMap::from([
+                ("identity".to_string(), value.identity),
+                ("client_authority".to_string(), value.client_authority),
+                ("server_authority".to_string(), value.server_authority),
+            ]),
+        }
+    }
+}
+
 /// Ship Spawn Request
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone)]

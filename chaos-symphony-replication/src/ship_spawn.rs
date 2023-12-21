@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
@@ -7,7 +7,7 @@ use chaos_symphony_ecs::{
     ship::{Ship, ShipBundle},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnResponse, ShipSpawning};
+use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest, ShipSpawnResponse, ShipSpawning};
 use tracing::instrument;
 
 #[instrument(skip_all)]
@@ -170,4 +170,80 @@ pub fn request(
             server_authority.clone(),
         ));
     });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn broadcast(
+    ships: Query<(&Identity, &ClientAuthority, &ServerAuthority), Added<Ship>>,
+    client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
+    server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
+) {
+    ships.for_each(|(identity, client_authority, server_authority)| {
+        let span = error_span!("broadcast", identity_id = identity.id());
+        let _guard = span.enter();
+
+        server_endpoints
+            .iter()
+            .chain(client_endpoints.iter())
+            .for_each(|endpoint| {
+                let id = Uuid::new_v4().to_string();
+
+                let span = error_span!(
+                    "broadcast",
+                    endpoint_id = endpoint.id(),
+                    identity_id = identity.id(),
+                    request_id = id
+                );
+                let _guard = span.enter();
+
+                let event = ShipSpawnEvent {
+                    id,
+                    identity: identity.id().to_string(),
+                    client_authority: client_authority.id().to_string(),
+                    server_authority: server_authority.id().to_string(),
+                };
+
+                if event.try_send(endpoint).is_err() {
+                    warn!("failed to send event to client");
+                }
+            });
+    });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn replicate(
+    client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
+    server_endpoints: Query<&NetworkEndpoint, Added<ServerAuthority>>,
+    ships: Query<(&Identity, &ClientAuthority, &ServerAuthority)>,
+) {
+    server_endpoints
+        .iter()
+        .chain(client_endpoints.iter())
+        .for_each(|endpoint| {
+            let span = error_span!("replicate", endpoint_id = endpoint.id());
+            let _guard = span.enter();
+
+            ships.for_each(|(identity, client_authority, server_authority)| {
+                let id = Uuid::new_v4().to_string();
+
+                let span = error_span!(
+                    "replicate",
+                    endpoint_id = endpoint.id(),
+                    identity_id = identity.id(),
+                    request_id = id
+                );
+                let _guard = span.enter();
+
+                let event = ShipSpawnEvent {
+                    id,
+                    identity: identity.id().to_string(),
+                    client_authority: client_authority.id().to_string(),
+                    server_authority: server_authority.id().to_string(),
+                };
+
+                if event.try_send(endpoint).is_err() {
+                    warn!("failed to send event to client");
+                }
+            });
+        });
 }
