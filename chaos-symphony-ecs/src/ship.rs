@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
     entity::Identity,
+    transform::Transformation,
 };
 
 /// Ship.
@@ -24,4 +25,7 @@ pub struct ShipBundle {
 
     /// Server Authority.
     pub server_authority: ServerAuthority,
+
+    /// Transform.
+    pub transformation: Transformation,
 }

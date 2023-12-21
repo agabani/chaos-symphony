@@ -1,9 +1,14 @@
-use bevy::{prelude::*, utils::Uuid};
+use bevy::{
+    math::{DQuat, DVec3},
+    prelude::*,
+    utils::Uuid,
+};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     entity::Identity,
     ship::{Ship, ShipBundle},
+    transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawning};
@@ -34,6 +39,19 @@ pub fn callback(mut commands: Commands, ship_spawnings: Query<(Entity, &ShipSpaw
                 identity: Identity::new(response.identity),
                 client_authority: ClientAuthority::new(response.client_authority),
                 server_authority: ServerAuthority::new(response.server_authority),
+                transformation: Transformation {
+                    orientation: DQuat {
+                        x: response.orientation_x,
+                        y: response.orientation_y,
+                        z: response.orientation_z,
+                        w: response.orientation_w,
+                    },
+                    position: DVec3 {
+                        x: response.position_x,
+                        y: response.position_y,
+                        z: response.position_z,
+                    },
+                },
             });
         }
     });

@@ -3,6 +3,9 @@
 
 //! Chaos Symphony
 
+mod ship;
+mod transform;
+
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
@@ -14,9 +17,11 @@ use chaos_symphony_ecs::{
     network_keep_alive::NetworkKeepAlivePlugin,
     routing::{EndpointId, Request},
     ship_spawn::ShipSpawnPlugin,
+    transform::Transformation,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::ShipSpawnEvent;
+use ship::ShipPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -49,14 +54,22 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
+    .add_plugins(ShipPlugin)
     .add_plugins(ShipSpawnPlugin)
+    .add_plugins(crate::transform::TransformPlugin)
+    .add_systems(Startup, camera)
     .add_systems(Update, route);
 
     app.register_type::<ClientAuthority>()
         .register_type::<ServerAuthority>()
-        .register_type::<Identity>();
+        .register_type::<Identity>()
+        .register_type::<Transformation>();
 
     app.run();
+}
+
+fn camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
 }
 
 #[allow(clippy::needless_pass_by_value)]

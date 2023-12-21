@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    math::{DQuat, DVec3},
+    prelude::*,
+};
 use chaos_symphony_protocol::ShipSpawnEvent;
 use tracing::instrument;
 
@@ -7,6 +10,7 @@ use crate::{
     entity::Identity,
     routing::Request,
     ship::{Ship, ShipBundle},
+    transform::Transformation,
 };
 
 /// Ship Spawn Plugin.
@@ -45,6 +49,19 @@ fn event(
             identity: Identity::new(event.identity.clone()),
             client_authority: ClientAuthority::new(event.client_authority.clone()),
             server_authority: ServerAuthority::new(event.server_authority.clone()),
+            transformation: Transformation {
+                orientation: DQuat {
+                    x: event.orientation_x,
+                    y: event.orientation_y,
+                    z: event.orientation_z,
+                    w: event.orientation_w,
+                },
+                position: DVec3 {
+                    x: event.position_x,
+                    y: event.position_y,
+                    z: event.position_z,
+                },
+            },
         });
     });
 }
