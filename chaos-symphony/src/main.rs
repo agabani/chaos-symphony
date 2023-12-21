@@ -3,8 +3,6 @@
 
 //! Chaos Symphony
 
-mod ship_spawn;
-
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
@@ -15,6 +13,7 @@ use chaos_symphony_ecs::{
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
     routing::{EndpointId, Request},
+    ship_spawn::ShipSpawnPlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::ShipSpawnEvent;
@@ -50,7 +49,8 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(Update, (route, ship_spawn::event));
+    .add_plugins(ShipSpawnPlugin)
+    .add_systems(Update, route);
 
     app.register_type::<ClientAuthority>()
         .register_type::<ServerAuthority>()

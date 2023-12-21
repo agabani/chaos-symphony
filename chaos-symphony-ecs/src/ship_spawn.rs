@@ -1,14 +1,27 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::{
+use chaos_symphony_protocol::ShipSpawnEvent;
+use tracing::instrument;
+
+use crate::{
     authority::{ClientAuthority, ServerAuthority},
     entity::Identity,
     routing::Request,
     ship::{Ship, ShipBundle},
 };
-use chaos_symphony_protocol::ShipSpawnEvent;
 
+/// Ship Spawn Plugin.
+#[allow(clippy::module_name_repetitions)]
+pub struct ShipSpawnPlugin;
+
+impl Plugin for ShipSpawnPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, event);
+    }
+}
+
+#[instrument(skip_all)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn event(
+fn event(
     mut commands: Commands,
     events: Query<(Entity, &Request<ShipSpawnEvent>)>,
     ships: Query<&Identity, With<Ship>>,
