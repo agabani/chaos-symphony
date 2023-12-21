@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chaos_symphony_network::Payload;
+use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
 /// Ping
@@ -23,13 +23,13 @@ impl Ping {
     }
 }
 
-impl From<Payload> for Ping {
-    fn from(value: Payload) -> Self {
+impl From<Message> for Ping {
+    fn from(value: Message) -> Self {
         Self { id: value.id }
     }
 }
 
-impl From<Ping> for Payload {
+impl From<Ping> for Message {
     fn from(value: Ping) -> Self {
         Self {
             id: value.id,

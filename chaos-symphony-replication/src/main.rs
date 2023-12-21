@@ -84,9 +84,9 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
-        while let Ok(payload) = endpoint.try_recv() {
-            let NetworkRecv::NonBlocking { payload } = payload;
-            match payload.endpoint.as_str() {
+        while let Ok(message) = endpoint.try_recv() {
+            let NetworkRecv::NonBlocking { message } = message;
+            match message.endpoint.as_str() {
                 "/event/ping" => {
                     // do nothing
                 }
@@ -96,7 +96,7 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
                             inner: endpoint.id(),
                         },
                         Request {
-                            inner: AuthenticateRequest::from(payload),
+                            inner: AuthenticateRequest::from(message),
                         },
                     ));
                 }
@@ -106,7 +106,7 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
                             inner: endpoint.id(),
                         },
                         Request {
-                            inner: ShipSpawnRequest::from(payload),
+                            inner: ShipSpawnRequest::from(message),
                         },
                     ));
                 }

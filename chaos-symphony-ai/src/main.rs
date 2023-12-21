@@ -58,16 +58,16 @@ async fn main() {
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
-        while let Ok(payload) = endpoint.try_recv() {
-            let NetworkRecv::NonBlocking { payload } = payload;
-            match payload.endpoint.as_str() {
+        while let Ok(message) = endpoint.try_recv() {
+            let NetworkRecv::NonBlocking { message } = message;
+            match message.endpoint.as_str() {
                 "/event/ship_spawn" => {
                     commands.spawn((
                         EndpointId {
                             inner: endpoint.id(),
                         },
                         Request {
-                            inner: ShipSpawnEvent::from(payload),
+                            inner: ShipSpawnEvent::from(message),
                         },
                     ));
                 }

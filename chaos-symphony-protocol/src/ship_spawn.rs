@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_network::Payload;
+use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
 /// Ship Spawn Event.
@@ -56,8 +56,8 @@ impl ShipSpawnEvent {
     }
 }
 
-impl From<Payload> for ShipSpawnEvent {
-    fn from(mut value: Payload) -> Self {
+impl From<Message> for ShipSpawnEvent {
+    fn from(mut value: Message) -> Self {
         Self {
             id: value.id,
             identity: value.properties.remove("identity").unwrap(),
@@ -109,7 +109,7 @@ impl From<Payload> for ShipSpawnEvent {
     }
 }
 
-impl From<ShipSpawnEvent> for Payload {
+impl From<ShipSpawnEvent> for Message {
     fn from(value: ShipSpawnEvent) -> Self {
         Self {
             id: value.id,
@@ -185,8 +185,8 @@ impl ShipSpawnRequest {
     }
 }
 
-impl From<Payload> for ShipSpawnRequest {
-    fn from(mut value: Payload) -> Self {
+impl From<Message> for ShipSpawnRequest {
+    fn from(mut value: Message) -> Self {
         Self {
             id: value.id,
             client_authority: value.properties.remove("client_authority").unwrap(),
@@ -195,7 +195,7 @@ impl From<Payload> for ShipSpawnRequest {
     }
 }
 
-impl From<ShipSpawnRequest> for Payload {
+impl From<ShipSpawnRequest> for Message {
     fn from(value: ShipSpawnRequest) -> Self {
         Self {
             id: value.id,
@@ -295,8 +295,8 @@ impl ShipSpawnResponse {
     }
 }
 
-impl From<Payload> for ShipSpawnResponse {
-    fn from(mut value: Payload) -> Self {
+impl From<Message> for ShipSpawnResponse {
+    fn from(mut value: Message) -> Self {
         Self {
             id: value.id,
             success: value.properties.remove("success").unwrap().parse().unwrap(),
@@ -349,7 +349,7 @@ impl From<Payload> for ShipSpawnResponse {
     }
 }
 
-impl From<ShipSpawnResponse> for Payload {
+impl From<ShipSpawnResponse> for Message {
     fn from(value: ShipSpawnResponse) -> Self {
         Self {
             id: value.id,
@@ -377,7 +377,7 @@ pub struct ShipSpawning {
     /// Id.
     pub id: String,
 
-    inner: Future<Payload>,
+    inner: Future<Message>,
 }
 
 impl ShipSpawning {

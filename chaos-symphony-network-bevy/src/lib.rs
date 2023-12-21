@@ -15,7 +15,7 @@ use std::{
 
 use bevy::{prelude::*, utils::tracing::instrument};
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_network::{AcceptError, Client, Connection, Payload, RecvError, Server};
+use chaos_symphony_network::{AcceptError, Client, Connection, Message, RecvError, Server};
 
 /// Network Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -169,7 +169,7 @@ impl NetworkEndpoint {
         self.remote_address
     }
 
-    /// Try receive payload.
+    /// Try receive message.
     ///
     /// # Errors
     ///
@@ -195,11 +195,11 @@ impl NetworkEndpoint {
     /// Will return `Err` if bevy-tokio bridge is disconnected.
     pub fn try_send_blocking(
         &self,
-        payload: Payload,
-    ) -> Result<Future<Payload>, tokio::sync::mpsc::error::SendError<NetworkSend>> {
+        message: Message,
+    ) -> Result<Future<Message>, tokio::sync::mpsc::error::SendError<NetworkSend>> {
         let (sender, receiver) = std::sync::mpsc::channel();
 
-        let result = self.sender.send(NetworkSend::Blocking { payload, sender });
+        let result = self.sender.send(NetworkSend::Blocking { message, sender });
 
         if result.is_err() {
             self.is_disconnected.store(true, Ordering::Relaxed);
@@ -215,9 +215,9 @@ impl NetworkEndpoint {
     /// Will return `Err` if bevy-tokio bridge is disconnected.
     pub fn try_send_non_blocking(
         &self,
-        payload: Payload,
+        message: Message,
     ) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
-        let result = self.sender.send(NetworkSend::NonBlocking { payload });
+        let result = self.sender.send(NetworkSend::NonBlocking { message });
 
         if result.is_err() {
             self.is_disconnected.store(true, Ordering::Relaxed);
@@ -244,7 +244,7 @@ impl NetworkEndpoint {
 
         let database = Arc::new(tokio::sync::Mutex::new(HashMap::<
             String,
-            std::sync::mpsc::Sender<Payload>,
+            std::sync::mpsc::Sender<Message>,
         >::new()));
 
         let (error_tx, mut error_rx) = tokio::sync::mpsc::unbounded_channel::<()>();
@@ -276,7 +276,7 @@ impl NetworkEndpoint {
     )]
     fn bridge_inbounds(
         error_tx: tokio::sync::mpsc::UnboundedSender<()>,
-        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Message>>>>,
         connection: Connection,
         sender: std::sync::mpsc::Sender<NetworkRecv>,
     ) -> tokio::sync::mpsc::Sender<()> {
@@ -308,7 +308,7 @@ impl NetworkEndpoint {
     )]
     fn bridge_outbounds(
         error_tx: tokio::sync::mpsc::UnboundedSender<()>,
-        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Message>>>>,
         connection: Connection,
         mut receiver: tokio::sync::mpsc::UnboundedReceiver<NetworkSend>,
     ) -> tokio::sync::mpsc::Sender<()> {
@@ -336,12 +336,12 @@ impl NetworkEndpoint {
     )]
     async fn bridge_inbound(
         error_tx: tokio::sync::mpsc::UnboundedSender<()>,
-        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Message>>>>,
         sender: std::sync::mpsc::Sender<NetworkRecv>,
-        result: Result<Payload, RecvError>,
+        result: Result<Message, RecvError>,
     ) {
-        let payload = match result {
-            Ok(payload) => payload,
+        let message = match result {
+            Ok(message) => message,
             Err(error) => {
                 warn!(error =? error, "bridge error");
                 if error_tx.send(()).is_err() {
@@ -351,16 +351,16 @@ impl NetworkEndpoint {
             }
         };
 
-        if let Some(sender) = database.lock().await.remove(&payload.id) {
-            if sender.send(payload).is_err() {
+        if let Some(sender) = database.lock().await.remove(&message.id) {
+            if sender.send(message).is_err() {
                 // the actor who sent the blocking request is no longer interested in the response.
-                warn!("failed to route payload to blocking channel");
+                warn!("failed to route message to blocking channel");
             }
             return;
         }
 
-        if sender.send(NetworkRecv::NonBlocking { payload }).is_err() {
-            warn!("failed to route payload to non-blocking channel");
+        if sender.send(NetworkRecv::NonBlocking { message }).is_err() {
+            warn!("failed to route message to non-blocking channel");
             if error_tx.send(()).is_err() {
                 warn!("failed to communicate error");
             }
@@ -378,7 +378,7 @@ impl NetworkEndpoint {
     )]
     async fn bridge_outbound(
         error_tx: tokio::sync::mpsc::UnboundedSender<()>,
-        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Payload>>>>,
+        database: Arc<tokio::sync::Mutex<HashMap<String, std::sync::mpsc::Sender<Message>>>>,
         connection: Connection,
         result: Option<NetworkSend>,
     ) {
@@ -390,16 +390,16 @@ impl NetworkEndpoint {
             return;
         };
 
-        let (payload, blocking) = match network_send {
-            NetworkSend::Blocking { payload, sender } => {
-                let id = payload.id.clone();
-                (payload, Some((id, sender)))
+        let (message, blocking) = match network_send {
+            NetworkSend::Blocking { message, sender } => {
+                let id = message.id.clone();
+                (message, Some((id, sender)))
             }
-            NetworkSend::NonBlocking { payload } => (payload, None),
+            NetworkSend::NonBlocking { message } => (message, None),
         };
 
-        if connection.send(payload).await.is_err() {
-            warn!("failed to route payload to connection");
+        if connection.send(message).await.is_err() {
+            warn!("failed to route message to connection");
             if error_tx.send(()).is_err() {
                 warn!("failed to communicate error");
             }
@@ -417,8 +417,8 @@ impl NetworkEndpoint {
 pub enum NetworkRecv {
     /// Non Blocking.
     NonBlocking {
-        /// Payload.
-        payload: Payload,
+        /// Message.
+        message: Message,
     },
 }
 
@@ -427,17 +427,17 @@ pub enum NetworkRecv {
 pub enum NetworkSend {
     /// Blocking.
     Blocking {
-        /// Payload.
-        payload: Payload,
+        /// Message.
+        message: Message,
 
         /// Sender.
-        sender: std::sync::mpsc::Sender<Payload>,
+        sender: std::sync::mpsc::Sender<Message>,
     },
 
     /// Non Blocking.
     NonBlocking {
-        /// Payload.
-        payload: Payload,
+        /// Message.
+        message: Message,
     },
 }
 
