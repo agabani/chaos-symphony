@@ -42,13 +42,13 @@ async fn main() {
         },
         NetworkDisconnectPlugin,
     ))
+    .add_systems(Update, (accepted, route, authenticate::request))
     .add_systems(
         Update,
         (
-            accepted,
-            route,
-            authenticate::request,
+            ship_spawn::broadcast,
             ship_spawn::callback,
+            ship_spawn::replicate,
             ship_spawn::request,
         ),
     );

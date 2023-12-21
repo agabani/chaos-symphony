@@ -7,10 +7,14 @@ mod ship_spawn;
 
 use bevy::{log::LogPlugin, prelude::*};
 use chaos_symphony_ecs::{
-    network_authenticate::NetworkAuthenticatePlugin, network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin, network_keep_alive::NetworkKeepAlivePlugin,
+    network_authenticate::NetworkAuthenticatePlugin,
+    network_connect::NetworkConnectPlugin,
+    network_disconnect::NetworkDisconnectPlugin,
+    network_keep_alive::NetworkKeepAlivePlugin,
+    routing::{EndpointId, Request},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
+use chaos_symphony_protocol::ShipSpawnEvent;
 
 #[tokio::main]
 async fn main() {
@@ -43,17 +47,35 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_systems(Update, (route, ship_spawn::callback, ship_spawn::request));
+    .add_systems(Update, route)
+    .add_systems(
+        Update,
+        (ship_spawn::callback, ship_spawn::event, ship_spawn::request),
+    );
 
     app.run();
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn route(endpoints: Query<&NetworkEndpoint>) {
+fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(payload) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { payload } = payload;
-            warn!(endpoint = payload.endpoint, "unhandled");
+            match payload.endpoint.as_str() {
+                "/event/ship_spawn" => {
+                    commands.spawn((
+                        EndpointId {
+                            inner: endpoint.id(),
+                        },
+                        Request {
+                            inner: ShipSpawnEvent::from(payload),
+                        },
+                    ));
+                }
+                endpoint => {
+                    warn!(endpoint, "unhandled");
+                }
+            }
         }
     });
 }

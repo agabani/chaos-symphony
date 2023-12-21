@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 /// Client Authority.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Reflect)]
 pub struct ClientAuthority {
     inner: String,
 }
@@ -23,7 +23,7 @@ impl ClientAuthority {
 
 /// Server Authority.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, Reflect)]
 pub struct ServerAuthority {
     inner: String,
 }

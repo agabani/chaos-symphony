@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 /// Identity.
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Reflect)]
 pub struct Identity {
     inner: String,
 }
