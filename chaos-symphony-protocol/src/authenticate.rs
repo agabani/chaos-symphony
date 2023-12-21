@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_network::Payload;
+use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 
 /// Authenticate Request
@@ -32,8 +32,8 @@ impl AuthenticateRequest {
     }
 }
 
-impl From<Payload> for AuthenticateRequest {
-    fn from(mut value: Payload) -> Self {
+impl From<Message> for AuthenticateRequest {
+    fn from(mut value: Message) -> Self {
         Self {
             id: value.id,
             identity: value.properties.remove("identity").unwrap(),
@@ -41,7 +41,7 @@ impl From<Payload> for AuthenticateRequest {
     }
 }
 
-impl From<AuthenticateRequest> for Payload {
+impl From<AuthenticateRequest> for Message {
     fn from(value: AuthenticateRequest) -> Self {
         Self {
             id: value.id,
@@ -64,8 +64,8 @@ pub struct AuthenticateResponse {
     pub identity: String,
 }
 
-impl From<Payload> for AuthenticateResponse {
-    fn from(mut value: Payload) -> Self {
+impl From<Message> for AuthenticateResponse {
+    fn from(mut value: Message) -> Self {
         Self {
             id: value.id,
             success: value.properties.remove("success").unwrap().parse().unwrap(),
@@ -74,7 +74,7 @@ impl From<Payload> for AuthenticateResponse {
     }
 }
 
-impl From<AuthenticateResponse> for Payload {
+impl From<AuthenticateResponse> for Message {
     fn from(value: AuthenticateResponse) -> Self {
         Self {
             id: value.id,
@@ -93,7 +93,7 @@ pub struct Authenticating {
     /// Id.
     pub id: String,
 
-    inner: Future<Payload>,
+    inner: Future<Message>,
 }
 
 impl Authenticating {
