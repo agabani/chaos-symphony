@@ -1396,6 +1396,8 @@ dependencies = [
  "chaos-symphony-async",
  "chaos-symphony-network",
  "chaos-symphony-network-bevy",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

@@ -4,7 +4,9 @@ use chaos_symphony_ecs::{
     routing::{EndpointId, Request},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateResponse};
+use chaos_symphony_protocol::{
+    AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload,
+};
 use tracing::instrument;
 
 #[instrument(skip_all)]
@@ -27,7 +29,7 @@ pub fn request(
             return;
         };
 
-        let identity = request.inner.identity.clone();
+        let identity = request.inner.payload.identity.clone();
 
         match identity.as_str() {
             "ai" | "client" => {
@@ -43,11 +45,13 @@ pub fn request(
             identity => todo!("{identity}"),
         };
 
-        let response = AuthenticateResponse {
-            id: request.inner.id.clone(),
-            success: true,
-            identity,
-        };
+        let response = AuthenticateResponse::new(
+            request.inner.id.clone(),
+            AuthenticateResponsePayload {
+                success: true,
+                identity,
+            },
+        );
 
         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {
             warn!(error =? error, "failed to send response to endpoint");

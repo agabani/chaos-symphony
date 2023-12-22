@@ -1,40 +1,35 @@
-use std::collections::HashMap;
-
-use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::error::SendError;
 
-/// Ping
-pub struct Ping {
-    /// Id.
-    pub id: String,
-}
+use crate::Message;
 
-impl Ping {
+/// Ping Event.
+#[allow(clippy::module_name_repetitions)]
+pub type PingEvent = Message<PingEventPayload>;
+
+impl PingEvent {
+    /// Creates a new [`PingEvent`].
+    #[must_use]
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+            endpoint: "/event/ping".to_string(),
+            payload: PingEventPayload,
+        }
+    }
+
     /// Try send.
     ///
     /// # Errors
     ///
     /// Will return `Err` if bevy-tokio bridge is disconnected.
-    pub fn try_send(
-        self,
-        endpoint: &NetworkEndpoint,
-    ) -> Result<(), tokio::sync::mpsc::error::SendError<NetworkSend>> {
+    pub fn try_send(self, endpoint: &NetworkEndpoint) -> Result<(), SendError<NetworkSend>> {
         endpoint.try_send_non_blocking(self.into())
     }
 }
 
-impl From<Message> for Ping {
-    fn from(value: Message) -> Self {
-        Self { id: value.id }
-    }
-}
-
-impl From<Ping> for Message {
-    fn from(value: Ping) -> Self {
-        Self {
-            id: value.id,
-            endpoint: "/event/ping".to_string(),
-            properties: HashMap::new(),
-        }
-    }
-}
+/// Ping Event Payload.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Deserialize, Serialize)]
+pub struct PingEventPayload;

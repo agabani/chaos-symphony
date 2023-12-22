@@ -4,7 +4,7 @@ use bevy::{
 };
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{AuthenticateRequest, Authenticating};
+use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateRequestPayload, Authenticating};
 
 use crate::authority::{ClientAuthority, ServerAuthority};
 
@@ -40,10 +40,12 @@ fn authenticate(
     endpoints: Query<(Entity, &NetworkEndpoint), Added<NetworkEndpoint>>,
 ) {
     endpoints.for_each(|(entity, endpoint)| {
-        let request = AuthenticateRequest {
-            id: Uuid::new_v4().to_string(),
-            identity: identity.inner.clone(),
-        };
+        let request = AuthenticateRequest::new(
+            Uuid::new_v4().to_string(),
+            AuthenticateRequestPayload {
+                identity: identity.inner.clone(),
+            },
+        );
 
         match request.try_send(endpoint) {
             Ok(authenticating) => {
@@ -83,20 +85,20 @@ fn authenticating(mut commands: Commands, authenticatings: Query<(Entity, &Authe
                 }
             };
 
-            if !response.success {
+            if !response.payload.success {
                 error!("failed to authenticate");
                 commands.entity(entity).despawn();
                 return;
             }
 
-            match response.identity.as_str() {
+            match response.payload.identity.as_str() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(response.identity);
+                    let authority = ClientAuthority::new(response.payload.identity);
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(response.identity);
+                    let authority = ServerAuthority::new(response.payload.identity);
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }
