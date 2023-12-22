@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::transform::Transformation;
 
-/// Transform Plugin.
+/// Transformation Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct TransformPlugin;
+pub struct TransformationPlugin;
 
-impl Plugin for TransformPlugin {
+impl Plugin for TransformationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (added, changed));
     }

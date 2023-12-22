@@ -19,10 +19,10 @@ impl Plugin for NetworkConnectPlugin {
 fn connect(
     mut commands: Commands,
     client: Res<NetworkClient>,
-    connectings: Query<(), With<Connecting>>,
+    callbacks: Query<(), With<Connecting>>,
     endpoints: Query<(), With<NetworkEndpoint>>,
 ) {
-    let connections = connectings.iter().count() + endpoints.iter().count();
+    let connections = callbacks.iter().count() + endpoints.iter().count();
     for _ in connections..1 {
         if let Ok(connecting) = client.connect() {
             commands.spawn(connecting);
@@ -39,9 +39,9 @@ fn connect(
 /// - On success, spawns [`NetworkEndpoint`].
 /// - On ready, despawns [`Connecting`].
 #[allow(clippy::needless_pass_by_value)]
-fn connecting(mut commands: Commands, connectings: Query<(Entity, &Connecting)>) {
-    connectings.for_each(|(entity, connecting)| {
-        if let Poll::Ready(result) = connecting.try_poll() {
+fn connecting(mut commands: Commands, callbacks: Query<(Entity, &Connecting)>) {
+    callbacks.for_each(|(entity, callback)| {
+        if let Poll::Ready(result) = callback.try_poll() {
             commands.entity(entity).despawn();
 
             let result = match result {

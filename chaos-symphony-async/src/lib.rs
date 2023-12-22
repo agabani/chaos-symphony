@@ -6,6 +6,7 @@
 use std::sync::{mpsc::TryRecvError, Mutex};
 
 /// Future.
+#[derive(Debug)]
 pub struct Future<T> {
     receiver: Mutex<std::sync::mpsc::Receiver<T>>,
 }
@@ -41,6 +42,7 @@ impl<T> Future<T> {
 
 /// Poll.
 #[must_use = "this `Poll` may be a `Ready` variant, which must be handled"]
+#[derive(Debug)]
 pub enum Poll<T> {
     /// Ready.
     Ready(T),

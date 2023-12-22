@@ -1,3 +1,4 @@
+use bevy::utils::Uuid;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
@@ -9,12 +10,15 @@ use crate::Message;
 pub type PingEvent = Message<PingEventPayload>;
 
 impl PingEvent {
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/event/ping";
+
     /// Creates a new [`PingEvent`].
     #[must_use]
-    pub fn new(id: String) -> Self {
+    pub fn new(id: Uuid) -> Self {
         Self {
             id,
-            endpoint: "/event/ping".to_string(),
+            endpoint: Self::ENDPOINT.to_string(),
             payload: PingEventPayload,
         }
     }
@@ -31,5 +35,5 @@ impl PingEvent {
 
 /// Ping Event Payload.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PingEventPayload;

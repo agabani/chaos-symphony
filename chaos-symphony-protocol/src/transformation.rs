@@ -1,8 +1,10 @@
+use std::fmt::Display;
+
 use bevy::math::{DQuat, DVec3};
 use serde::{Deserialize, Serialize};
 
 /// Orientation.
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct Orientation {
     /// X.
     pub x: f64,
@@ -20,6 +22,12 @@ pub struct Orientation {
 impl Default for Orientation {
     fn default() -> Self {
         DQuat::default().into()
+    }
+}
+
+impl Display for Orientation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "x:{}, y:{}, z:{}, w:{}", self.x, self.y, self.z, self.w)
     }
 }
 
@@ -46,7 +54,7 @@ impl From<Orientation> for DQuat {
 }
 
 /// Position.
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct Position {
     /// X.
     pub x: f64,
@@ -65,6 +73,12 @@ impl Default for Position {
             y: 0.0,
             z: 0.0,
         }
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "x:{}, y:{}, z:{}", self.x, self.y, self.z)
     }
 }
 
@@ -89,11 +103,21 @@ impl From<Position> for DVec3 {
 }
 
 /// Position.
-#[derive(Default, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize)]
 pub struct Transformation {
     /// Orientation.
     pub orientation: Orientation,
 
     /// Position.
     pub position: Position,
+}
+
+impl Display for Transformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "orientation:[{}], position:[{}]",
+            self.orientation, self.position
+        )
+    }
 }

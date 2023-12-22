@@ -7,14 +7,18 @@ mod ship_spawn;
 
 use std::str::FromStr as _;
 
-use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
+use bevy::{
+    log::{Level, LogPlugin},
+    prelude::*,
+    utils::Uuid,
+};
 use chaos_symphony_ecs::{
     identity::Identity,
+    network::{NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
-    routing::{EndpointId, Request},
     ship_spawn::ShipSpawnPlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
@@ -36,7 +40,7 @@ async fn main() {
                 "wgpu_hal=warn",
             ]
             .join(","),
-            level: bevy::log::Level::DEBUG,
+            level: Level::DEBUG,
         },
     ))
     .add_plugins((
@@ -67,12 +71,12 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
             match message.endpoint.as_str() {
-                "/event/ship_spawn" => {
+                ShipSpawnEvent::ENDPOINT => {
                     commands.spawn((
-                        EndpointId {
+                        NetworkEndpointId {
                             inner: endpoint.id(),
                         },
-                        Request {
+                        NetworkMessage {
                             inner: ShipSpawnEvent::from(message),
                         },
                     ));

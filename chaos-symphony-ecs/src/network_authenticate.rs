@@ -4,7 +4,9 @@ use bevy::{
 };
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateRequestPayload, Authenticating};
+use chaos_symphony_protocol::{
+    AuthenticateRequest, AuthenticateRequestPayload, AuthenticateResponsePayload, Authenticating,
+};
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
@@ -30,6 +32,7 @@ impl Plugin for NetworkAuthenticatePlugin {
 /// Identity.
 #[derive(Resource)]
 struct NetworkIdentity {
+    /// Inner.
     inner: Identity,
 }
 
@@ -44,7 +47,7 @@ fn authenticate(
 ) {
     endpoints.for_each(|(entity, endpoint)| {
         let request = AuthenticateRequest::new(
-            Uuid::new_v4().to_string(),
+            Uuid::new_v4(),
             AuthenticateRequestPayload {
                 identity: identity.inner.clone().into(),
             },
@@ -70,12 +73,12 @@ fn authenticate(
 /// - On success, inserts authority.
 #[allow(clippy::needless_pass_by_value)]
 #[instrument(skip_all)]
-fn authenticating(mut commands: Commands, authenticatings: Query<(Entity, &Authenticating)>) {
-    authenticatings.for_each(|(entity, authenticating)| {
-        let span = error_span!("authenticating", id = authenticating.id());
+fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticating)>) {
+    callbacks.for_each(|(entity, callback)| {
+        let span = error_span!("authenticating", message_id =% callback.id());
         let _guard = span.enter();
 
-        if let Poll::Ready(result) = authenticating.try_poll() {
+        if let Poll::Ready(result) = callback.try_poll() {
             let response = match result {
                 Ok(result) => {
                     commands.entity(entity).remove::<Authenticating>();
@@ -88,20 +91,23 @@ fn authenticating(mut commands: Commands, authenticatings: Query<(Entity, &Authe
                 }
             };
 
-            if !response.payload.success {
+            let span = error_span!("authenticating", message_id =% response.id);
+            let _guard = span.enter();
+
+            let AuthenticateResponsePayload::Success { identity } = response.payload else {
                 error!("failed to authenticate");
                 commands.entity(entity).despawn();
                 return;
-            }
+            };
 
-            match response.payload.identity.noun.as_str() {
+            match identity.noun.as_str() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(response.payload.identity.into());
+                    let authority = ClientAuthority::new(identity.into());
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(response.payload.identity.into());
+                    let authority = ServerAuthority::new(identity.into());
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }

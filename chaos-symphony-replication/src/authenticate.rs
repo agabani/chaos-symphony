@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    routing::{EndpointId, Request},
+    network::{NetworkEndpointId, NetworkMessage},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
@@ -12,11 +12,15 @@ use tracing::instrument;
 #[instrument(skip_all)]
 pub fn request(
     mut commands: Commands,
-    requests: Query<(Entity, &EndpointId, &Request<AuthenticateRequest>)>,
+    messages: Query<(
+        Entity,
+        &NetworkEndpointId,
+        &NetworkMessage<AuthenticateRequest>,
+    )>,
     endpoints: Query<(Entity, &NetworkEndpoint)>,
 ) {
-    requests.for_each(|(entity, endpoint_id, request)| {
-        let span = error_span!("request", request_id = request.inner.id);
+    messages.for_each(|(entity, endpoint_id, message)| {
+        let span = error_span!("request", message_id =% message.inner.id);
         let _guard = span.enter();
 
         commands.entity(entity).despawn();
@@ -29,7 +33,7 @@ pub fn request(
             return;
         };
 
-        let identity = request.inner.payload.identity.clone();
+        let identity = &message.inner.payload.identity;
 
         match identity.noun.as_str() {
             "ai" | "client" => {
@@ -42,17 +46,15 @@ pub fn request(
                 info!(authority =? authority, "authenticated");
                 commands.entity(entity).insert(authority);
             }
-            identity => todo!("{identity}"),
+            noun => todo!("{noun}"),
         };
 
         let response = AuthenticateResponse::new(
-            request.inner.id.clone(),
-            AuthenticateResponsePayload {
-                success: true,
-                identity,
+            message.inner.id,
+            AuthenticateResponsePayload::Success {
+                identity: identity.clone(),
             },
         );
-
         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {
             warn!(error =? error, "failed to send response to endpoint");
         }
