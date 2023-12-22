@@ -1,8 +1,4 @@
-use bevy::{
-    math::{DQuat, DVec3},
-    prelude::*,
-    utils::Uuid,
-};
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
@@ -12,7 +8,9 @@ use chaos_symphony_ecs::{
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest, ShipSpawnResponse, ShipSpawning};
+use chaos_symphony_protocol::{
+    ShipSpawnEvent, ShipSpawnEventPayload, ShipSpawnRequest, ShipSpawnResponse, ShipSpawning,
+};
 use tracing::instrument;
 
 #[instrument(skip_all)]
@@ -57,7 +55,7 @@ pub fn callback(
                     return;
                 };
 
-                if !response.success {
+                if !response.payload.success {
                     warn!("server rejected request");
 
                     let Some(endpoint) = endpoint else {
@@ -72,26 +70,14 @@ pub fn callback(
                     return;
                 }
 
-                let identity = response.identity.clone();
+                let identity = response.payload.identity.clone();
                 info!(identity =? identity, "spawned");
                 commands.spawn(ShipBundle {
                     ship: Ship,
                     identity: Identity::new(identity),
                     client_authority: client_authority.clone(),
                     server_authority: server_authority.clone(),
-                    transformation: Transformation {
-                        orientation: DQuat {
-                            x: response.orientation_x,
-                            y: response.orientation_y,
-                            z: response.orientation_z,
-                            w: response.orientation_w,
-                        },
-                        position: DVec3 {
-                            x: response.position_x,
-                            y: response.position_y,
-                            z: response.position_z,
-                        },
-                    },
+                    transformation: response.payload.transformation.into(),
                 });
 
                 let response = response
@@ -223,19 +209,15 @@ pub fn broadcast(
                     );
                     let _guard = span.enter();
 
-                    let event = ShipSpawnEvent {
+                    let event = ShipSpawnEvent::new(
                         id,
-                        identity: identity.id().to_string(),
-                        client_authority: client_authority.id().to_string(),
-                        server_authority: server_authority.id().to_string(),
-                        orientation_x: transformation.orientation.x,
-                        orientation_y: transformation.orientation.y,
-                        orientation_z: transformation.orientation.z,
-                        orientation_w: transformation.orientation.w,
-                        position_x: transformation.position.x,
-                        position_y: transformation.position.y,
-                        position_z: transformation.position.z,
-                    };
+                        ShipSpawnEventPayload {
+                            identity: identity.id().to_string(),
+                            client_authority: client_authority.id().to_string(),
+                            server_authority: server_authority.id().to_string(),
+                            transformation: (*transformation).into(),
+                        },
+                    );
 
                     if event.try_send(endpoint).is_err() {
                         warn!("failed to send event to client");
@@ -275,19 +257,15 @@ pub fn replicate(
                     );
                     let _guard = span.enter();
 
-                    let event = ShipSpawnEvent {
+                    let event = ShipSpawnEvent::new(
                         id,
-                        identity: identity.id().to_string(),
-                        client_authority: client_authority.id().to_string(),
-                        server_authority: server_authority.id().to_string(),
-                        orientation_x: transformation.orientation.x,
-                        orientation_y: transformation.orientation.y,
-                        orientation_z: transformation.orientation.z,
-                        orientation_w: transformation.orientation.w,
-                        position_x: transformation.position.x,
-                        position_y: transformation.position.y,
-                        position_z: transformation.position.z,
-                    };
+                        ShipSpawnEventPayload {
+                            identity: identity.id().to_string(),
+                            client_authority: client_authority.id().to_string(),
+                            server_authority: server_authority.id().to_string(),
+                            transformation: (*transformation).into(),
+                        },
+                    );
 
                     if event.try_send(endpoint).is_err() {
                         warn!("failed to send event to client");

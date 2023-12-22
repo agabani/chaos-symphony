@@ -1,17 +1,12 @@
-use bevy::{
-    math::{DQuat, DVec3},
-    prelude::*,
-    utils::Uuid,
-};
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     entity::Identity,
     ship::{Ship, ShipBundle},
-    transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawning};
+use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnRequestPayload, ShipSpawning};
 use tracing::instrument;
 
 #[instrument(skip_all)]
@@ -28,30 +23,18 @@ pub fn callback(mut commands: Commands, ship_spawnings: Query<(Entity, &ShipSpaw
                 return;
             };
 
-            if !response.success {
+            if !response.payload.success {
                 warn!("server rejected request");
                 return;
             }
 
-            info!(identity =? response.identity, "spawned");
+            info!(identity =? response.payload.identity, "spawned");
             commands.spawn(ShipBundle {
                 ship: Ship,
-                identity: Identity::new(response.identity),
-                client_authority: ClientAuthority::new(response.client_authority),
-                server_authority: ServerAuthority::new(response.server_authority),
-                transformation: Transformation {
-                    orientation: DQuat {
-                        x: response.orientation_x,
-                        y: response.orientation_y,
-                        z: response.orientation_z,
-                        w: response.orientation_w,
-                    },
-                    position: DVec3 {
-                        x: response.position_x,
-                        y: response.position_y,
-                        z: response.position_z,
-                    },
-                },
+                identity: Identity::new(response.payload.identity),
+                client_authority: ClientAuthority::new(response.payload.client_authority),
+                server_authority: ServerAuthority::new(response.payload.server_authority),
+                transformation: response.payload.transformation.into(),
             });
         }
     });
@@ -73,7 +56,14 @@ pub fn request(
             let span = error_span!("request", request_id =? id);
             let _guard = span.enter();
 
-            let Ok(ship_spawning) = ShipSpawnRequest::new(id).try_send(endpoint) else {
+            let Ok(ship_spawning) = ShipSpawnRequest::new(
+                id,
+                ShipSpawnRequestPayload {
+                    client_authority: String::new(),
+                    server_authority: String::new(),
+                },
+            )
+            .try_send(endpoint) else {
                 error!("failed to send request to server");
                 continue;
             };

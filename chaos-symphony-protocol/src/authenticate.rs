@@ -1,21 +1,26 @@
-use std::collections::HashMap;
-
 use bevy::prelude::*;
 use chaos_symphony_async::{Future, Poll, PollError};
-use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::error::SendError;
 
-/// Authenticate Request
+use crate::Message;
+
+/// Authenticate Request.
 #[allow(clippy::module_name_repetitions)]
-pub struct AuthenticateRequest {
-    /// Id.
-    pub id: String,
-
-    /// Identity.
-    pub identity: String,
-}
+pub type AuthenticateRequest = Message<AuthenticateRequestPayload>;
 
 impl AuthenticateRequest {
+    /// Creates a new [`AuthenticateRequest`].
+    #[must_use]
+    pub fn new(id: String, payload: AuthenticateRequestPayload) -> Self {
+        Self {
+            id,
+            endpoint: "/request/authenticate".to_string(),
+            payload,
+        }
+    }
+
     /// Try send.
     ///
     /// # Errors
@@ -24,7 +29,7 @@ impl AuthenticateRequest {
     pub fn try_send(
         self,
         endpoint: &NetworkEndpoint,
-    ) -> Result<Authenticating, tokio::sync::mpsc::error::SendError<NetworkSend>> {
+    ) -> Result<Authenticating, SendError<NetworkSend>> {
         let id = self.id.clone();
         endpoint
             .try_send_blocking(self.into())
@@ -32,31 +37,43 @@ impl AuthenticateRequest {
     }
 }
 
-impl From<Message> for AuthenticateRequest {
-    fn from(mut value: Message) -> Self {
-        Self {
-            id: value.id,
-            identity: value.properties.remove("identity").unwrap(),
-        }
-    }
-}
-
-impl From<AuthenticateRequest> for Message {
-    fn from(value: AuthenticateRequest) -> Self {
-        Self {
-            id: value.id,
-            endpoint: "/request/authenticate".to_string(),
-            properties: HashMap::from([("identity".to_string(), value.identity)]),
-        }
-    }
+/// Authenticate Request Payload.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Deserialize, Serialize)]
+pub struct AuthenticateRequestPayload {
+    /// Identity.
+    pub identity: String,
 }
 
 /// Authenticate Response.
 #[allow(clippy::module_name_repetitions)]
-pub struct AuthenticateResponse {
-    /// Id.
-    pub id: String,
+pub type AuthenticateResponse = Message<AuthenticateResponsePayload>;
 
+impl AuthenticateResponse {
+    /// Creates a new [`AuthenticateResponse`].
+    #[must_use]
+    pub fn new(id: String, payload: AuthenticateResponsePayload) -> Self {
+        Self {
+            id,
+            endpoint: "/response/authenticate".to_string(),
+            payload,
+        }
+    }
+
+    /// Try send.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected.
+    pub fn try_send(self, endpoint: &NetworkEndpoint) -> Result<(), SendError<NetworkSend>> {
+        endpoint.try_send_non_blocking(self.into())
+    }
+}
+
+/// Authenticate Response Payload.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Deserialize, Serialize)]
+pub struct AuthenticateResponsePayload {
     /// Success.
     pub success: bool,
 
@@ -64,36 +81,13 @@ pub struct AuthenticateResponse {
     pub identity: String,
 }
 
-impl From<Message> for AuthenticateResponse {
-    fn from(mut value: Message) -> Self {
-        Self {
-            id: value.id,
-            success: value.properties.remove("success").unwrap().parse().unwrap(),
-            identity: value.properties.remove("identity").unwrap(),
-        }
-    }
-}
-
-impl From<AuthenticateResponse> for Message {
-    fn from(value: AuthenticateResponse) -> Self {
-        Self {
-            id: value.id,
-            endpoint: "/response/authenticate".to_string(),
-            properties: HashMap::from([
-                ("success".to_string(), value.success.to_string()),
-                ("identity".to_string(), value.identity),
-            ]),
-        }
-    }
-}
-
-/// Authenticating
+/// Authenticating.
 #[derive(Component)]
 pub struct Authenticating {
     /// Id.
     pub id: String,
 
-    inner: Future<Message>,
+    inner: Future<chaos_symphony_network::Message>,
 }
 
 impl Authenticating {

@@ -1,7 +1,4 @@
-use bevy::{
-    math::{DQuat, DVec3},
-    prelude::*,
-};
+use bevy::prelude::*;
 use chaos_symphony_protocol::ShipSpawnEvent;
 use tracing::instrument;
 
@@ -10,7 +7,6 @@ use crate::{
     entity::Identity,
     routing::Request,
     ship::{Ship, ShipBundle},
-    transform::Transformation,
 };
 
 /// Ship Spawn Plugin.
@@ -33,35 +29,30 @@ fn event(
     events.for_each(|(entity, event)| {
         commands.entity(entity).despawn();
 
-        let event = &event.inner;
+        let message = &event.inner;
 
-        let span = error_span!("event", event_id = event.id, identity = event.identity);
+        let span = error_span!(
+            "event",
+            event_id = message.id,
+            identity = message.payload.identity
+        );
         let _guard = span.enter();
 
-        if ships.iter().any(|identity| identity.id() == event.identity) {
+        if ships
+            .iter()
+            .any(|identity| identity.id() == message.payload.identity)
+        {
             debug!("already spawned");
             return;
         }
 
-        info!(identity =? event.identity, "spawned");
+        info!(identity =? message.payload.identity, "spawned");
         commands.spawn(ShipBundle {
             ship: Ship,
-            identity: Identity::new(event.identity.clone()),
-            client_authority: ClientAuthority::new(event.client_authority.clone()),
-            server_authority: ServerAuthority::new(event.server_authority.clone()),
-            transformation: Transformation {
-                orientation: DQuat {
-                    x: event.orientation_x,
-                    y: event.orientation_y,
-                    z: event.orientation_z,
-                    w: event.orientation_w,
-                },
-                position: DVec3 {
-                    x: event.position_x,
-                    y: event.position_y,
-                    z: event.position_z,
-                },
-            },
+            identity: Identity::new(message.payload.identity.clone()),
+            client_authority: ClientAuthority::new(message.payload.client_authority.clone()),
+            server_authority: ServerAuthority::new(message.payload.server_authority.clone()),
+            transformation: message.payload.transformation.into(),
         });
     });
 }

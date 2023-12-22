@@ -11,7 +11,7 @@ use chaos_symphony_ecs::{
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnResponse};
+use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnResponse, ShipSpawnResponsePayload};
 use tracing::instrument;
 
 #[instrument(skip_all)]
@@ -39,28 +39,24 @@ pub fn request(
         let bundle = ShipBundle {
             ship: Ship,
             identity: Identity::new(Uuid::new_v4().to_string()),
-            client_authority: ClientAuthority::new(request.client_authority.clone()),
-            server_authority: ServerAuthority::new(request.server_authority.clone()),
+            client_authority: ClientAuthority::new(request.payload.client_authority.clone()),
+            server_authority: ServerAuthority::new(request.payload.server_authority.clone()),
             transformation: Transformation {
                 orientation: DQuat::from_rotation_z(0.0),
                 position: DVec3::ZERO,
             },
         };
 
-        let response = ShipSpawnResponse {
-            id: request.id.clone(),
-            success: true,
-            identity: bundle.identity.id().to_string(),
-            client_authority: bundle.client_authority.id().to_string(),
-            server_authority: bundle.server_authority.id().to_string(),
-            orientation_x: bundle.transformation.orientation.x,
-            orientation_y: bundle.transformation.orientation.y,
-            orientation_z: bundle.transformation.orientation.z,
-            orientation_w: bundle.transformation.orientation.w,
-            position_x: bundle.transformation.position.x,
-            position_y: bundle.transformation.position.y,
-            position_z: bundle.transformation.position.z,
-        };
+        let response = ShipSpawnResponse::new(
+            request.id.clone(),
+            ShipSpawnResponsePayload {
+                success: true,
+                identity: bundle.identity.id().to_string(),
+                client_authority: bundle.client_authority.id().to_string(),
+                server_authority: bundle.server_authority.id().to_string(),
+                transformation: bundle.transformation.into(),
+            },
+        );
 
         if response.try_send(endpoint).is_err() {
             error!("failed to send response to endpoint");
