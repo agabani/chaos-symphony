@@ -5,7 +5,7 @@ use bevy::{
 };
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
+    identity::Identity,
     routing::{EndpointId, Request},
     ship::{Ship, ShipBundle},
     transform::Transformation,
@@ -38,9 +38,9 @@ pub fn request(
 
         let bundle = ShipBundle {
             ship: Ship,
-            identity: Identity::new(Uuid::new_v4().to_string()),
-            client_authority: ClientAuthority::new(request.payload.client_authority.clone()),
-            server_authority: ServerAuthority::new(request.payload.server_authority.clone()),
+            identity: Identity::new("ship".to_string(), Uuid::new_v4()),
+            client_authority: ClientAuthority::new(request.payload.client_authority.clone().into()),
+            server_authority: ServerAuthority::new(request.payload.server_authority.clone().into()),
             transformation: Transformation {
                 orientation: DQuat::from_rotation_z(0.0),
                 position: DVec3::ZERO,
@@ -51,9 +51,9 @@ pub fn request(
             request.id.clone(),
             ShipSpawnResponsePayload {
                 success: true,
-                identity: bundle.identity.id().to_string(),
-                client_authority: bundle.client_authority.id().to_string(),
-                server_authority: bundle.server_authority.id().to_string(),
+                identity: bundle.identity.clone().into(),
+                client_authority: bundle.client_authority.identity().clone().into(),
+                server_authority: bundle.server_authority.identity().clone().into(),
                 transformation: bundle.transformation.into(),
             },
         );

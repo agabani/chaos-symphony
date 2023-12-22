@@ -6,11 +6,13 @@
 mod ship;
 mod transform;
 
-use bevy::{log::LogPlugin, prelude::*};
+use std::str::FromStr as _;
+
+use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
+    identity::Identity,
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
@@ -48,7 +50,10 @@ async fn main() {
             server: false,
         },
         NetworkAuthenticatePlugin {
-            identity: "client".to_string(),
+            identity: Identity::new(
+                "client".to_string(),
+                Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
+            ),
         },
         NetworkConnectPlugin,
         NetworkDisconnectPlugin,
@@ -63,7 +68,8 @@ async fn main() {
     app.register_type::<ClientAuthority>()
         .register_type::<ServerAuthority>()
         .register_type::<Identity>()
-        .register_type::<Transformation>();
+        .register_type::<Transformation>()
+        .register_type::<Uuid>();
 
     app.run();
 }

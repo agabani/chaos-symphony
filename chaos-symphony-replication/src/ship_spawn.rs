@@ -2,7 +2,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
+    identity::Identity,
     routing::{EndpointId, Request},
     ship::{Ship, ShipBundle},
     transform::Transformation,
@@ -70,19 +70,19 @@ pub fn callback(
                     return;
                 }
 
-                let identity = response.payload.identity.clone();
+                let identity = response.payload.identity.clone().into();
                 info!(identity =? identity, "spawned");
                 commands.spawn(ShipBundle {
                     ship: Ship,
-                    identity: Identity::new(identity),
+                    identity,
                     client_authority: client_authority.clone(),
                     server_authority: server_authority.clone(),
                     transformation: response.payload.transformation.into(),
                 });
 
                 let response = response
-                    .with_client_authority(client_authority.id().to_string())
-                    .with_server_authority(server_authority.id().to_string());
+                    .with_client_authority(client_authority.identity().clone().into())
+                    .with_server_authority(server_authority.identity().clone().into());
 
                 let Some(endpoint) = endpoint else {
                     warn!("client endpoint not found");
@@ -148,8 +148,8 @@ pub fn request(
 
         let Ok(ship_spawning) = request
             .clone()
-            .with_client_authority(client_authority.id().to_string())
-            .with_server_authority(server_authority.id().to_string())
+            .with_client_authority(client_authority.identity().clone().into())
+            .with_server_authority(server_authority.identity().clone().into())
             .try_send(server_endpoint)
         else {
             error!("failed to send request to server");
@@ -192,7 +192,7 @@ pub fn broadcast(
 ) {
     ships.for_each(
         |(identity, client_authority, server_authority, transformation)| {
-            let span = error_span!("broadcast", identity_id = identity.id());
+            let span = error_span!("broadcast", identity_id =? identity);
             let _guard = span.enter();
 
             server_endpoints
@@ -204,7 +204,7 @@ pub fn broadcast(
                     let span = error_span!(
                         "broadcast",
                         endpoint_id = endpoint.id(),
-                        identity_id = identity.id(),
+                        identity_id =? identity.id(),
                         request_id = id
                     );
                     let _guard = span.enter();
@@ -212,9 +212,9 @@ pub fn broadcast(
                     let event = ShipSpawnEvent::new(
                         id,
                         ShipSpawnEventPayload {
-                            identity: identity.id().to_string(),
-                            client_authority: client_authority.id().to_string(),
-                            server_authority: server_authority.id().to_string(),
+                            identity: identity.clone().into(),
+                            client_authority: client_authority.identity().clone().into(),
+                            server_authority: server_authority.identity().clone().into(),
                             transformation: (*transformation).into(),
                         },
                     );
@@ -252,7 +252,7 @@ pub fn replicate(
                     let span = error_span!(
                         "replicate",
                         endpoint_id = endpoint.id(),
-                        identity_id = identity.id(),
+                        identity_id =? identity.id(),
                         request_id = id
                     );
                     let _guard = span.enter();
@@ -260,9 +260,9 @@ pub fn replicate(
                     let event = ShipSpawnEvent::new(
                         id,
                         ShipSpawnEventPayload {
-                            identity: identity.id().to_string(),
-                            client_authority: client_authority.id().to_string(),
-                            server_authority: server_authority.id().to_string(),
+                            identity: identity.clone().into(),
+                            client_authority: client_authority.identity().clone().into(),
+                            server_authority: server_authority.identity().clone().into(),
                             transformation: (*transformation).into(),
                         },
                     );

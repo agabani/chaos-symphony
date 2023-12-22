@@ -5,8 +5,11 @@
 
 mod ship_spawn;
 
-use bevy::{log::LogPlugin, prelude::*};
+use std::str::FromStr as _;
+
+use bevy::{log::LogPlugin, prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
+    identity::Identity,
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
@@ -42,7 +45,10 @@ async fn main() {
             server: false,
         },
         NetworkAuthenticatePlugin {
-            identity: "ai".to_string(),
+            identity: Identity::new(
+                "ai".to_string(),
+                Uuid::from_str("d908808f-073d-4c57-9c08-bf91ba2b1bce").unwrap(),
+            ),
         },
         NetworkConnectPlugin,
         NetworkDisconnectPlugin,

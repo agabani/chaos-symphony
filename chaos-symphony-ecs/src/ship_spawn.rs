@@ -4,7 +4,7 @@ use tracing::instrument;
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
+    identity::Identity,
     routing::Request,
     ship::{Ship, ShipBundle},
 };
@@ -34,24 +34,26 @@ fn event(
         let span = error_span!(
             "event",
             event_id = message.id,
-            identity = message.payload.identity
+            identity =? message.payload.identity.id
         );
         let _guard = span.enter();
 
+        let message_payload_identity = message.payload.identity.clone().into();
+
         if ships
             .iter()
-            .any(|identity| identity.id() == message.payload.identity)
+            .any(|identity| *identity == message_payload_identity)
         {
             debug!("already spawned");
             return;
         }
 
-        info!(identity =? message.payload.identity, "spawned");
+        info!(identity =? message.payload.identity.id, "spawned");
         commands.spawn(ShipBundle {
             ship: Ship,
-            identity: Identity::new(message.payload.identity.clone()),
-            client_authority: ClientAuthority::new(message.payload.client_authority.clone()),
-            server_authority: ServerAuthority::new(message.payload.server_authority.clone()),
+            identity: message_payload_identity,
+            client_authority: ClientAuthority::new(message.payload.client_authority.clone().into()),
+            server_authority: ServerAuthority::new(message.payload.server_authority.clone().into()),
             transformation: message.payload.transformation.into(),
         });
     });
