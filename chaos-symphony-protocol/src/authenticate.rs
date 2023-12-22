@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
@@ -11,12 +11,15 @@ use crate::{Identity, Message};
 pub type AuthenticateRequest = Message<AuthenticateRequestPayload>;
 
 impl AuthenticateRequest {
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/request/authenticate";
+
     /// Creates a new [`AuthenticateRequest`].
     #[must_use]
-    pub fn new(id: String, payload: AuthenticateRequestPayload) -> Self {
+    pub fn new(id: Uuid, payload: AuthenticateRequestPayload) -> Self {
         Self {
             id,
-            endpoint: "/request/authenticate".to_string(),
+            endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
     }
@@ -30,16 +33,16 @@ impl AuthenticateRequest {
         self,
         endpoint: &NetworkEndpoint,
     ) -> Result<Authenticating, SendError<NetworkSend>> {
-        let id = self.id.clone();
+        let id = self.id;
         endpoint
             .try_send_blocking(self.into())
-            .map(|future| Authenticating { id, inner: future })
+            .map(|future| Authenticating { id, future })
     }
 }
 
 /// Authenticate Request Payload.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AuthenticateRequestPayload {
     /// Identity.
     pub identity: Identity,
@@ -50,12 +53,15 @@ pub struct AuthenticateRequestPayload {
 pub type AuthenticateResponse = Message<AuthenticateResponsePayload>;
 
 impl AuthenticateResponse {
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/response/authenticate";
+
     /// Creates a new [`AuthenticateResponse`].
     #[must_use]
-    pub fn new(id: String, payload: AuthenticateResponsePayload) -> Self {
+    pub fn new(id: Uuid, payload: AuthenticateResponsePayload) -> Self {
         Self {
             id,
-            endpoint: "/response/authenticate".to_string(),
+            endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
     }
@@ -72,33 +78,36 @@ impl AuthenticateResponse {
 
 /// Authenticate Response Payload.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Deserialize, Serialize)]
-pub struct AuthenticateResponsePayload {
-    /// Success.
-    pub success: bool,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum AuthenticateResponsePayload {
+    /// Failure.
+    Failure,
 
-    /// Identity.
-    pub identity: Identity,
+    /// Success.
+    Success {
+        /// Identity.
+        identity: Identity,
+    },
 }
 
 /// Authenticating.
-#[derive(Component)]
+#[derive(Debug, Component)]
 pub struct Authenticating {
     /// Id.
-    pub id: String,
+    pub id: Uuid,
 
-    inner: Future<chaos_symphony_network::Message>,
+    future: Future<chaos_symphony_network::Message>,
 }
 
 impl Authenticating {
     /// Id.
     #[must_use]
-    pub fn id(&self) -> &str {
-        self.id.as_ref()
+    pub fn id(&self) -> Uuid {
+        self.id
     }
 
     /// Try poll.
     pub fn try_poll(&self) -> Poll<Result<AuthenticateResponse, PollError>> {
-        self.inner.try_poll().map(|r| r.map(Into::into))
+        self.future.try_poll().map(|result| result.map(Into::into))
     }
 }

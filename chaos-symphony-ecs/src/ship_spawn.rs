@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
     identity::Identity,
-    routing::Request,
+    network::NetworkMessage,
     ship::{Ship, ShipBundle},
 };
 
@@ -23,7 +23,7 @@ impl Plugin for ShipSpawnPlugin {
 #[allow(clippy::needless_pass_by_value)]
 fn event(
     mut commands: Commands,
-    events: Query<(Entity, &Request<ShipSpawnEvent>)>,
+    events: Query<(Entity, &NetworkMessage<ShipSpawnEvent>)>,
     ships: Query<&Identity, With<Ship>>,
 ) {
     events.for_each(|(entity, event)| {
@@ -33,8 +33,8 @@ fn event(
 
         let span = error_span!(
             "event",
-            event_id = message.id,
-            identity =? message.payload.identity.id
+            message_id =% message.id,
+            identity =% message.payload.identity
         );
         let _guard = span.enter();
 

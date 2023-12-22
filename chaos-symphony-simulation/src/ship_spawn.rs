@@ -6,22 +6,28 @@ use bevy::{
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     identity::Identity,
-    routing::{EndpointId, Request},
+    network::{NetworkEndpointId, NetworkMessage},
     ship::{Ship, ShipBundle},
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ShipSpawnRequest, ShipSpawnResponse, ShipSpawnResponsePayload};
+use chaos_symphony_protocol::{
+    ShipSpawnRequest, ShipSpawnResponse, ShipSpawnResponsePayload, ShipSpawnResponsePayloadSuccess,
+};
 use tracing::instrument;
 
 #[instrument(skip_all)]
 pub fn request(
     mut commands: Commands,
-    requests: Query<(Entity, &EndpointId, &Request<ShipSpawnRequest>)>,
+    messages: Query<(
+        Entity,
+        &NetworkEndpointId,
+        &NetworkMessage<ShipSpawnRequest>,
+    )>,
     endpoints: Query<&NetworkEndpoint>,
 ) {
-    requests.for_each(|(entity, endpoint_id, request)| {
-        let span = error_span!("request", request_id = request.inner.id);
+    messages.for_each(|(entity, endpoint_id, message)| {
+        let span = error_span!("request", message_id =% message.inner.id);
         let _guard = span.enter();
 
         commands.entity(entity).despawn();
@@ -34,13 +40,31 @@ pub fn request(
             return;
         };
 
-        let request = &request.inner;
+        let Some(client_authority) = &message.inner.payload.client_authority else {
+            error!("client authority is missing");
+            let response =
+                ShipSpawnResponse::new(message.inner.id, ShipSpawnResponsePayload::Failure);
+            if response.try_send(endpoint).is_err() {
+                error!("failed to send response to endpoint");
+            }
+            return;
+        };
+
+        let Some(server_authority) = &message.inner.payload.server_authority else {
+            error!("server authority is missing");
+            let response =
+                ShipSpawnResponse::new(message.inner.id, ShipSpawnResponsePayload::Failure);
+            if response.try_send(endpoint).is_err() {
+                error!("failed to send response to endpoint");
+            }
+            return;
+        };
 
         let bundle = ShipBundle {
             ship: Ship,
             identity: Identity::new("ship".to_string(), Uuid::new_v4()),
-            client_authority: ClientAuthority::new(request.payload.client_authority.clone().into()),
-            server_authority: ServerAuthority::new(request.payload.server_authority.clone().into()),
+            client_authority: ClientAuthority::new(client_authority.clone().into()),
+            server_authority: ServerAuthority::new(server_authority.clone().into()),
             transformation: Transformation {
                 orientation: DQuat::from_rotation_z(0.0),
                 position: DVec3::ZERO,
@@ -48,14 +72,13 @@ pub fn request(
         };
 
         let response = ShipSpawnResponse::new(
-            request.id.clone(),
-            ShipSpawnResponsePayload {
-                success: true,
+            message.inner.id,
+            ShipSpawnResponsePayload::Success(ShipSpawnResponsePayloadSuccess {
                 identity: bundle.identity.clone().into(),
                 client_authority: bundle.client_authority.identity().clone().into(),
                 server_authority: bundle.server_authority.identity().clone().into(),
                 transformation: bundle.transformation.into(),
-            },
+            }),
         );
 
         if response.try_send(endpoint).is_err() {

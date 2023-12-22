@@ -7,6 +7,8 @@
 pub mod authority;
 /// Identity.
 pub mod identity;
+/// Network.
+pub mod network;
 /// Network Authenticate.
 pub mod network_authenticate;
 /// Network Connect.
@@ -15,8 +17,6 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
-/// Routing.
-pub mod routing;
 /// Ship.
 pub mod ship;
 /// Ship Spawn.

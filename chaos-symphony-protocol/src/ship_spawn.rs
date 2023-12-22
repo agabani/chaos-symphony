@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
@@ -11,12 +11,15 @@ use crate::{Identity, Message, Transformation};
 pub type ShipSpawnEvent = Message<ShipSpawnEventPayload>;
 
 impl ShipSpawnEvent {
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/event/ship_spawn";
+
     /// Creates a new [`ShipSpawnEvent`].
     #[must_use]
-    pub fn new(id: String, payload: ShipSpawnEventPayload) -> Self {
+    pub fn new(id: Uuid, payload: ShipSpawnEventPayload) -> Self {
         Self {
             id,
-            endpoint: "/event/ship_spawn".to_string(),
+            endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
     }
@@ -33,7 +36,7 @@ impl ShipSpawnEvent {
 
 /// Ship Spawn Event Payload .
 #[allow(clippy::module_name_repetitions)]
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ShipSpawnEventPayload {
     /// Identity.
     pub identity: Identity,
@@ -53,12 +56,15 @@ pub struct ShipSpawnEventPayload {
 pub type ShipSpawnRequest = Message<ShipSpawnRequestPayload>;
 
 impl ShipSpawnRequest {
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/request/ship_spawn";
+
     /// Creates a new [`ShipSpawnedRequest`].
     #[must_use]
-    pub fn new(id: String, payload: ShipSpawnRequestPayload) -> Self {
+    pub fn new(id: Uuid, payload: ShipSpawnRequestPayload) -> Self {
         Self {
             id,
-            endpoint: "/request/ship_spawn".to_string(),
+            endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
     }
@@ -72,36 +78,22 @@ impl ShipSpawnRequest {
         self,
         endpoint: &NetworkEndpoint,
     ) -> Result<ShipSpawning, SendError<NetworkSend>> {
-        let id = self.id.clone();
+        let id = self.id;
         endpoint
             .try_send_blocking(self.into())
-            .map(|future| ShipSpawning { id, inner: future })
-    }
-
-    /// With Client Authority.
-    #[must_use]
-    pub fn with_client_authority(mut self, client_authority: Identity) -> Self {
-        self.payload.client_authority = client_authority;
-        self
-    }
-
-    /// With Server Authority.
-    #[must_use]
-    pub fn with_server_authority(mut self, server_authority: Identity) -> Self {
-        self.payload.server_authority = server_authority;
-        self
+            .map(|future| ShipSpawning { id, future })
     }
 }
 
 /// Ship Spawn Request Payload.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ShipSpawnRequestPayload {
     /// Client Authority.
-    pub client_authority: Identity,
+    pub client_authority: Option<Identity>,
 
     /// Server Authority.
-    pub server_authority: Identity,
+    pub server_authority: Option<Identity>,
 }
 
 /// Ship Spawn Response.
@@ -109,29 +101,17 @@ pub struct ShipSpawnRequestPayload {
 pub type ShipSpawnResponse = Message<ShipSpawnResponsePayload>;
 
 impl ShipSpawnResponse {
-    /// Creates a new [`ShipSpawnResponse`].
-    #[must_use]
-    pub fn new(id: String, payload: ShipSpawnResponsePayload) -> Self {
-        Self {
-            id,
-            endpoint: "/response/ship_spawn".to_string(),
-            payload,
-        }
-    }
+    /// Endpoint.
+    pub const ENDPOINT: &'static str = "/response/ship_spawn";
 
     /// Creates a new [`ShipSpawnResponse`].
     #[must_use]
-    pub fn error(id: String) -> Self {
-        Self::new(
+    pub fn new(id: Uuid, payload: ShipSpawnResponsePayload) -> Self {
+        Self {
             id,
-            ShipSpawnResponsePayload {
-                success: false,
-                identity: Identity::zero(),
-                client_authority: Identity::zero(),
-                server_authority: Identity::zero(),
-                transformation: Transformation::default(),
-            },
-        )
+            endpoint: Self::ENDPOINT.to_string(),
+            payload,
+        }
     }
 
     /// Try send.
@@ -142,29 +122,23 @@ impl ShipSpawnResponse {
     pub fn try_send(self, endpoint: &NetworkEndpoint) -> Result<(), SendError<NetworkSend>> {
         endpoint.try_send_non_blocking(self.into())
     }
-
-    /// With Client Authority.
-    #[must_use]
-    pub fn with_client_authority(mut self, client_authority: Identity) -> Self {
-        self.payload.client_authority = client_authority;
-        self
-    }
-
-    /// With Server Authority.
-    #[must_use]
-    pub fn with_server_authority(mut self, server_authority: Identity) -> Self {
-        self.payload.server_authority = server_authority;
-        self
-    }
 }
 
 /// Ship Spawn Response Payload.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Deserialize, Serialize)]
-pub struct ShipSpawnResponsePayload {
-    /// Success.
-    pub success: bool,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum ShipSpawnResponsePayload {
+    /// Failure.
+    Failure,
 
+    /// Success.
+    Success(ShipSpawnResponsePayloadSuccess),
+}
+
+/// Ship Spawn Response Payload Success.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ShipSpawnResponsePayloadSuccess {
     /// Identity.
     pub identity: Identity,
 
@@ -179,17 +153,17 @@ pub struct ShipSpawnResponsePayload {
 }
 
 /// Ship Spawning.
-#[derive(Component)]
+#[derive(Debug, Component)]
 pub struct ShipSpawning {
     /// Id.
-    pub id: String,
+    pub id: Uuid,
 
-    inner: Future<chaos_symphony_network::Message>,
+    future: Future<chaos_symphony_network::Message>,
 }
 
 impl ShipSpawning {
     /// Try poll.
     pub fn try_poll(&self) -> Poll<Result<ShipSpawnResponse, PollError>> {
-        self.inner.try_poll().map(|r| r.map(Into::into))
+        self.future.try_poll().map(|result| result.map(Into::into))
     }
 }

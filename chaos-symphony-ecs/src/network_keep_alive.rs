@@ -39,9 +39,8 @@ fn keep_alive(
 ) {
     if timer.inner.tick(time.delta()).just_finished() {
         query.for_each(|(entity, endpoint)| {
-            let ping = PingEvent::new(Uuid::new_v4().to_string());
-
-            if ping.try_send(endpoint).is_err() {
+            let message = PingEvent::new(Uuid::new_v4());
+            if message.try_send(endpoint).is_err() {
                 let span = warn_span!(
                     "keep_alive",
                     entity =? entity,

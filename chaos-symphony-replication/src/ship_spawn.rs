@@ -3,41 +3,42 @@ use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     identity::Identity,
-    routing::{EndpointId, Request},
+    network::{NetworkEndpointId, NetworkMessage},
     ship::{Ship, ShipBundle},
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    ShipSpawnEvent, ShipSpawnEventPayload, ShipSpawnRequest, ShipSpawnResponse, ShipSpawning,
+    ShipSpawnEvent, ShipSpawnEventPayload, ShipSpawnRequest, ShipSpawnResponse,
+    ShipSpawnResponsePayload, ShipSpawning,
 };
 use tracing::instrument;
 
 #[instrument(skip_all)]
 pub fn callback(
     mut commands: Commands,
-    ship_spawnings: Query<(
+    callbacks: Query<(
         Entity,
         &ShipSpawning,
         &ClientAuthority,
         &ServerAuthority,
-        &EndpointId,
+        &NetworkEndpointId,
     )>,
     endpoints: Query<&NetworkEndpoint>,
 ) {
-    ship_spawnings.for_each(
-        |(entity, ship_spawning, client_authority, server_authority, endpoint_id)| {
-            let span = error_span!("callback", request_id = ship_spawning.id);
+    callbacks.for_each(
+        |(entity, callback, client_authority, server_authority, endpoint_id)| {
+            let span = error_span!("callback", message_id =% callback.id);
             let _guard = span.enter();
 
-            if let Poll::Ready(result) = ship_spawning.try_poll() {
+            if let Poll::Ready(result) = callback.try_poll() {
                 commands.entity(entity).despawn();
 
                 let endpoint = endpoints
                     .iter()
                     .find(|endpoint| endpoint.id() == endpoint_id.inner);
 
-                let Ok(response) = result else {
+                let Ok(mut response) = result else {
                     error!("failed to receive response from server");
 
                     let Some(endpoint) = endpoint else {
@@ -45,17 +46,16 @@ pub fn callback(
                         return;
                     };
 
-                    if ShipSpawnResponse::error(ship_spawning.id.clone())
-                        .try_send(endpoint)
-                        .is_err()
-                    {
+                    let response =
+                        ShipSpawnResponse::new(callback.id, ShipSpawnResponsePayload::Failure);
+                    if response.try_send(endpoint).is_err() {
                         warn!("failed to send response to client endpoint");
                     }
 
                     return;
                 };
 
-                if !response.payload.success {
+                let ShipSpawnResponsePayload::Success(success) = &mut response.payload else {
                     warn!("server rejected request");
 
                     let Some(endpoint) = endpoint else {
@@ -68,21 +68,20 @@ pub fn callback(
                     }
 
                     return;
-                }
+                };
 
-                let identity = response.payload.identity.clone().into();
-                info!(identity =? identity, "spawned");
+                // overwrite
+                success.client_authority = client_authority.identity().clone().into();
+                success.server_authority = server_authority.identity().clone().into();
+
+                info!(identity =? success.identity, "spawned");
                 commands.spawn(ShipBundle {
                     ship: Ship,
-                    identity,
+                    identity: success.identity.clone().into(),
                     client_authority: client_authority.clone(),
                     server_authority: server_authority.clone(),
-                    transformation: response.payload.transformation.into(),
+                    transformation: success.transformation.into(),
                 });
-
-                let response = response
-                    .with_client_authority(client_authority.identity().clone().into())
-                    .with_server_authority(server_authority.identity().clone().into());
 
                 let Some(endpoint) = endpoint else {
                     warn!("client endpoint not found");
@@ -100,12 +99,16 @@ pub fn callback(
 #[instrument(skip_all)]
 pub fn request(
     mut commands: Commands,
-    requests: Query<(Entity, &EndpointId, &Request<ShipSpawnRequest>)>,
+    messages: Query<(
+        Entity,
+        &NetworkEndpointId,
+        &NetworkMessage<ShipSpawnRequest>,
+    )>,
     clients: Query<(&NetworkEndpoint, Option<&ClientAuthority>)>,
     servers: Query<(&NetworkEndpoint, &ServerAuthority)>,
 ) {
-    requests.for_each(|(entity, endpoint_id, request)| {
-        let span = error_span!("request", request_id = request.inner.id);
+    messages.for_each(|(entity, endpoint_id, message)| {
+        let span = error_span!("request", message_id =% message.inner.id);
         let _guard = span.enter();
 
         commands.entity(entity).despawn();
@@ -118,55 +121,45 @@ pub fn request(
             return;
         };
 
-        let request = &request.inner;
+        let request = &message.inner;
 
         let Some(client_authority) = client_authority else {
             warn!("client endpoint unauthenticated");
-
-            if ShipSpawnResponse::error(request.id.to_string())
-                .try_send(client_endpoint)
-                .is_err()
-            {
+            let response = ShipSpawnResponse::new(request.id, ShipSpawnResponsePayload::Failure);
+            if response.try_send(client_endpoint).is_err() {
                 warn!("failed to send response to client");
             }
-
             return;
         };
 
         let Some((server_endpoint, server_authority)) = servers.iter().next() else {
             warn!("server unavailable");
-
-            if ShipSpawnResponse::error(request.id.to_string())
-                .try_send(client_endpoint)
-                .is_err()
-            {
+            let response = ShipSpawnResponse::new(request.id, ShipSpawnResponsePayload::Failure);
+            if response.try_send(client_endpoint).is_err() {
                 warn!("failed to send response to client");
             }
-
             return;
         };
 
-        let Ok(ship_spawning) = request
-            .clone()
-            .with_client_authority(client_authority.identity().clone().into())
-            .with_server_authority(server_authority.identity().clone().into())
-            .try_send(server_endpoint)
-        else {
-            error!("failed to send request to server");
+        // overwrite
+        let id = request.id;
 
-            if ShipSpawnResponse::error(request.id.to_string())
-                .try_send(client_endpoint)
-                .is_err()
-            {
+        let mut request = request.clone();
+        request.payload.client_authority = Some(client_authority.identity().clone().into());
+        request.payload.server_authority = Some(server_authority.identity().clone().into());
+
+        let Ok(ship_spawning) = request.try_send(server_endpoint) else {
+            error!("failed to send request to server");
+            let response = ShipSpawnResponse::new(id, ShipSpawnResponsePayload::Failure);
+            if response.try_send(client_endpoint).is_err() {
                 warn!("failed to send response to client");
             }
-
             return;
         };
 
         info!("sent request to server");
         commands.spawn((
-            EndpointId {
+            NetworkEndpointId {
                 inner: client_endpoint.id(),
             },
             ship_spawning,
@@ -199,13 +192,13 @@ pub fn broadcast(
                 .iter()
                 .chain(client_endpoints.iter())
                 .for_each(|endpoint| {
-                    let id = Uuid::new_v4().to_string();
+                    let id = Uuid::new_v4();
 
                     let span = error_span!(
                         "broadcast",
                         endpoint_id = endpoint.id(),
                         identity_id =? identity.id(),
-                        request_id = id
+                        message_id =% id
                     );
                     let _guard = span.enter();
 
@@ -247,13 +240,13 @@ pub fn replicate(
 
             ships.for_each(
                 |(identity, client_authority, server_authority, transformation)| {
-                    let id = Uuid::new_v4().to_string();
+                    let id = Uuid::new_v4();
 
                     let span = error_span!(
                         "replicate",
                         endpoint_id = endpoint.id(),
-                        identity_id =? identity.id(),
-                        request_id = id
+                        identity_id =% identity.id(),
+                        message_id =% id
                     );
                     let _guard = span.enter();
 

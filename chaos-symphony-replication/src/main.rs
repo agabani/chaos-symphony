@@ -8,13 +8,16 @@ mod ship_spawn;
 
 use std::sync::mpsc::TryRecvError;
 
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::{
+    log::{Level, LogPlugin},
+    prelude::*,
+};
 use chaos_symphony_ecs::{
+    network::{NetworkEndpointId, NetworkMessage},
     network_disconnect::NetworkDisconnectPlugin,
-    routing::{EndpointId, Request},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::{AuthenticateRequest, ShipSpawnRequest};
+use chaos_symphony_protocol::{AuthenticateRequest, PingEvent, ShipSpawnRequest};
 
 #[tokio::main]
 async fn main() {
@@ -32,7 +35,7 @@ async fn main() {
                 "wgpu_hal=warn",
             ]
             .join(","),
-            level: bevy::log::Level::DEBUG,
+            level: Level::DEBUG,
         },
     ))
     .add_plugins((
@@ -87,25 +90,25 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
             match message.endpoint.as_str() {
-                "/event/ping" => {
+                PingEvent::ENDPOINT => {
                     // do nothing
                 }
-                "/request/authenticate" => {
+                AuthenticateRequest::ENDPOINT => {
                     commands.spawn((
-                        EndpointId {
+                        NetworkEndpointId {
                             inner: endpoint.id(),
                         },
-                        Request {
+                        NetworkMessage {
                             inner: AuthenticateRequest::from(message),
                         },
                     ));
                 }
-                "/request/ship_spawn" => {
+                ShipSpawnRequest::ENDPOINT => {
                     commands.spawn((
-                        EndpointId {
+                        NetworkEndpointId {
                             inner: endpoint.id(),
                         },
-                        Request {
+                        NetworkMessage {
                             inner: ShipSpawnRequest::from(message),
                         },
                     ));
