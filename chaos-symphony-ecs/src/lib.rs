@@ -5,8 +5,8 @@
 
 /// Authority.
 pub mod authority;
-/// Entity.
-pub mod entity;
+/// Identity.
+pub mod identity;
 /// Network Authenticate.
 pub mod network_authenticate;
 /// Network Connect.

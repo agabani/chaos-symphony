@@ -2,7 +2,6 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
     ship::{Ship, ShipBundle},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
@@ -28,12 +27,13 @@ pub fn callback(mut commands: Commands, ship_spawnings: Query<(Entity, &ShipSpaw
                 return;
             }
 
-            info!(identity =? response.payload.identity, "spawned");
+            let identity = response.payload.identity.into();
+            info!(identity =? identity, "spawned");
             commands.spawn(ShipBundle {
                 ship: Ship,
-                identity: Identity::new(response.payload.identity),
-                client_authority: ClientAuthority::new(response.payload.client_authority),
-                server_authority: ServerAuthority::new(response.payload.server_authority),
+                identity,
+                client_authority: ClientAuthority::new(response.payload.client_authority.into()),
+                server_authority: ServerAuthority::new(response.payload.server_authority.into()),
                 transformation: response.payload.transformation.into(),
             });
         }
@@ -59,8 +59,8 @@ pub fn request(
             let Ok(ship_spawning) = ShipSpawnRequest::new(
                 id,
                 ShipSpawnRequestPayload {
-                    client_authority: String::new(),
-                    server_authority: String::new(),
+                    client_authority: chaos_symphony_protocol::Identity::zero(),
+                    server_authority: chaos_symphony_protocol::Identity::zero(),
                 },
             )
             .try_send(endpoint) else {

@@ -6,18 +6,21 @@ use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{AuthenticateRequest, AuthenticateRequestPayload, Authenticating};
 
-use crate::authority::{ClientAuthority, ServerAuthority};
+use crate::{
+    authority::{ClientAuthority, ServerAuthority},
+    identity::Identity,
+};
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
 pub struct NetworkAuthenticatePlugin {
     /// Identity.
-    pub identity: String,
+    pub identity: Identity,
 }
 
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Identity {
+        app.insert_resource(NetworkIdentity {
             inner: self.identity.clone(),
         })
         .add_systems(Update, (authenticate, authenticating));
@@ -26,8 +29,8 @@ impl Plugin for NetworkAuthenticatePlugin {
 
 /// Identity.
 #[derive(Resource)]
-struct Identity {
-    inner: String,
+struct NetworkIdentity {
+    inner: Identity,
 }
 
 /// Authenticate.
@@ -36,14 +39,14 @@ struct Identity {
 #[allow(clippy::needless_pass_by_value)]
 fn authenticate(
     mut commands: Commands,
-    identity: Res<Identity>,
+    identity: Res<NetworkIdentity>,
     endpoints: Query<(Entity, &NetworkEndpoint), Added<NetworkEndpoint>>,
 ) {
     endpoints.for_each(|(entity, endpoint)| {
         let request = AuthenticateRequest::new(
             Uuid::new_v4().to_string(),
             AuthenticateRequestPayload {
-                identity: identity.inner.clone(),
+                identity: identity.inner.clone().into(),
             },
         );
 
@@ -91,14 +94,14 @@ fn authenticating(mut commands: Commands, authenticatings: Query<(Entity, &Authe
                 return;
             }
 
-            match response.payload.identity.as_str() {
+            match response.payload.identity.noun.as_str() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(response.payload.identity);
+                    let authority = ClientAuthority::new(response.payload.identity.into());
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(response.payload.identity);
+                    let authority = ServerAuthority::new(response.payload.identity.into());
                     info!(authority =? authority, "authenticated");
                     commands.entity(entity).insert(authority);
                 }

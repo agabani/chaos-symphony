@@ -4,7 +4,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
 
-use crate::Message;
+use crate::{Identity, Message};
 
 /// Authenticate Request.
 #[allow(clippy::module_name_repetitions)]
@@ -42,7 +42,7 @@ impl AuthenticateRequest {
 #[derive(Deserialize, Serialize)]
 pub struct AuthenticateRequestPayload {
     /// Identity.
-    pub identity: String,
+    pub identity: Identity,
 }
 
 /// Authenticate Response.
@@ -78,7 +78,7 @@ pub struct AuthenticateResponsePayload {
     pub success: bool,
 
     /// Identity.
-    pub identity: String,
+    pub identity: Identity,
 }
 
 /// Authenticating.

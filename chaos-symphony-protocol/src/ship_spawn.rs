@@ -4,7 +4,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
 
-use crate::{Message, Transformation};
+use crate::{Identity, Message, Transformation};
 
 /// Ship Spawn Event.
 #[allow(clippy::module_name_repetitions)]
@@ -36,13 +36,13 @@ impl ShipSpawnEvent {
 #[derive(Deserialize, Serialize)]
 pub struct ShipSpawnEventPayload {
     /// Identity.
-    pub identity: String,
+    pub identity: Identity,
 
     /// Client Authority.
-    pub client_authority: String,
+    pub client_authority: Identity,
 
     /// Server Authority.
-    pub server_authority: String,
+    pub server_authority: Identity,
 
     /// Transformation.
     pub transformation: Transformation,
@@ -80,14 +80,14 @@ impl ShipSpawnRequest {
 
     /// With Client Authority.
     #[must_use]
-    pub fn with_client_authority(mut self, client_authority: String) -> Self {
+    pub fn with_client_authority(mut self, client_authority: Identity) -> Self {
         self.payload.client_authority = client_authority;
         self
     }
 
     /// With Server Authority.
     #[must_use]
-    pub fn with_server_authority(mut self, server_authority: String) -> Self {
+    pub fn with_server_authority(mut self, server_authority: Identity) -> Self {
         self.payload.server_authority = server_authority;
         self
     }
@@ -98,10 +98,10 @@ impl ShipSpawnRequest {
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ShipSpawnRequestPayload {
     /// Client Authority.
-    pub client_authority: String,
+    pub client_authority: Identity,
 
     /// Server Authority.
-    pub server_authority: String,
+    pub server_authority: Identity,
 }
 
 /// Ship Spawn Response.
@@ -126,9 +126,9 @@ impl ShipSpawnResponse {
             id,
             ShipSpawnResponsePayload {
                 success: false,
-                identity: String::new(),
-                client_authority: String::new(),
-                server_authority: String::new(),
+                identity: Identity::zero(),
+                client_authority: Identity::zero(),
+                server_authority: Identity::zero(),
                 transformation: Transformation::default(),
             },
         )
@@ -145,14 +145,14 @@ impl ShipSpawnResponse {
 
     /// With Client Authority.
     #[must_use]
-    pub fn with_client_authority(mut self, client_authority: String) -> Self {
+    pub fn with_client_authority(mut self, client_authority: Identity) -> Self {
         self.payload.client_authority = client_authority;
         self
     }
 
     /// With Server Authority.
     #[must_use]
-    pub fn with_server_authority(mut self, server_authority: String) -> Self {
+    pub fn with_server_authority(mut self, server_authority: Identity) -> Self {
         self.payload.server_authority = server_authority;
         self
     }
@@ -166,13 +166,13 @@ pub struct ShipSpawnResponsePayload {
     pub success: bool,
 
     /// Identity.
-    pub identity: String,
+    pub identity: Identity,
 
     /// Client Authority.
-    pub client_authority: String,
+    pub client_authority: Identity,
 
     /// Server Authority.
-    pub server_authority: String,
+    pub server_authority: Identity,
 
     /// Transformation.
     pub transformation: Transformation,

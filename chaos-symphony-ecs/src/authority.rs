@@ -1,23 +1,25 @@
 use bevy::prelude::*;
 
+use crate::identity::Identity;
+
 /// Client Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
 pub struct ClientAuthority {
-    inner: String,
+    identity: Identity,
 }
 
 impl ClientAuthority {
     /// Creates a new [`ClientAuthority`].
     #[must_use]
-    pub fn new(id: String) -> Self {
-        Self { inner: id }
+    pub fn new(identity: Identity) -> Self {
+        Self { identity }
     }
 
-    /// Id.
+    /// Identity.
     #[must_use]
-    pub fn id(&self) -> &str {
-        self.inner.as_ref()
+    pub fn identity(&self) -> &Identity {
+        &self.identity
     }
 }
 
@@ -25,19 +27,19 @@ impl ClientAuthority {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
 pub struct ServerAuthority {
-    inner: String,
+    identity: Identity,
 }
 
 impl ServerAuthority {
     /// Creates a new [`ServerAuthority`].
     #[must_use]
-    pub fn new(id: String) -> Self {
-        Self { inner: id }
+    pub fn new(identity: Identity) -> Self {
+        Self { identity }
     }
 
-    /// Id.
+    /// Identity.
     #[must_use]
-    pub fn id(&self) -> &str {
-        self.inner.as_ref()
+    pub fn identity(&self) -> &Identity {
+        &self.identity
     }
 }

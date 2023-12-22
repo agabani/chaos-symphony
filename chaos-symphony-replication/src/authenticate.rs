@@ -31,14 +31,14 @@ pub fn request(
 
         let identity = request.inner.payload.identity.clone();
 
-        match identity.as_str() {
+        match identity.noun.as_str() {
             "ai" | "client" => {
-                let authority = ClientAuthority::new(identity.clone());
+                let authority = ClientAuthority::new(identity.clone().into());
                 info!(authority =? authority, "authenticated");
                 commands.entity(entity).insert(authority);
             }
             "simulation" => {
-                let authority = ServerAuthority::new(identity.clone());
+                let authority = ServerAuthority::new(identity.clone().into());
                 info!(authority =? authority, "authenticated");
                 commands.entity(entity).insert(authority);
             }

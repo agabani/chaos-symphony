@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    entity::Identity,
+    identity::Identity,
     transform::Transformation,
 };
 
