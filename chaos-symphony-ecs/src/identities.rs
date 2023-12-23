@@ -2,14 +2,10 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    IdentitiesCallback, IdentitiesEvent, IdentitiesRequest, IdentitiesRequestPayload,
-    IdentitiesResponsePayload,
+    IdentitiesCallback, IdentitiesRequest, IdentitiesRequestPayload, IdentitiesResponsePayload,
 };
 
-use crate::{
-    network::NetworkMessage,
-    types::{ClientAuthority, Identity, ServerAuthority},
-};
+use crate::types::{ClientAuthority, ServerAuthority};
 
 /// Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -17,7 +13,7 @@ pub struct IdentitiesPlugin;
 
 impl Plugin for IdentitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (callback, event, request));
+        app.add_systems(Update, (callback, request));
     }
 }
 
@@ -42,32 +38,6 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallbac
 
             info!("server accepted request");
         }
-    });
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn event(
-    mut commands: Commands,
-    messages: Query<(Entity, &NetworkMessage<IdentitiesEvent>)>,
-    identities: Query<&Identity>,
-) {
-    messages.for_each(|(entity, message)| {
-        commands.entity(entity).despawn();
-
-        let message = &message.inner;
-
-        let span = error_span!("event", message_id =% message.id);
-        let _guard = span.enter();
-
-        let identity: Identity = message.payload.identity.clone().into();
-
-        if identities.iter().any(|i| *i == identity) {
-            debug!("already spawned");
-            return;
-        }
-
-        info!(identity =% message.payload.identity, "spawned");
-        commands.spawn(identity);
     });
 }
 

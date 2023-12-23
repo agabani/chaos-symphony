@@ -6,6 +6,7 @@
 mod authenticate;
 mod client_authority;
 mod identities;
+mod identity;
 mod replicate;
 mod server_authority;
 mod ship;
@@ -29,6 +30,7 @@ use chaos_symphony_protocol::{
 };
 use client_authority::ClientAuthorityPlugin;
 use identities::IdentitiesPlugin;
+use identity::IdentityPlugin;
 use replicate::ReplicatePlugin;
 use server_authority::ServerAuthorityPlugin;
 use ship::ShipPlugin;
@@ -63,6 +65,7 @@ async fn main() {
     .add_plugins((
         ClientAuthorityPlugin,
         IdentitiesPlugin,
+        IdentityPlugin,
         ReplicatePlugin,
         ServerAuthorityPlugin,
         ShipPlugin,

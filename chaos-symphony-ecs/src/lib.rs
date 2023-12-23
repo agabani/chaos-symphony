@@ -58,6 +58,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
         app.add_plugins((
             client_authority::ClientAuthorityPlugin,
             identities::IdentitiesPlugin,
+            identity::IdentitiesPlugin,
             replicate::ReplicatePlugin,
             server_authority::ServerAuthorityPlugin,
             ship::ShipPlugin,

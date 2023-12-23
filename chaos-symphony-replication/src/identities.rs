@@ -5,8 +5,8 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    IdentitiesEvent, IdentitiesEventPayload, IdentitiesRequest, IdentitiesResponse,
-    IdentitiesResponsePayload,
+    IdentitiesRequest, IdentitiesResponse, IdentitiesResponsePayload, IdentityEvent,
+    IdentityEventPayload,
 };
 
 /// Identities Plugin.
@@ -55,9 +55,9 @@ fn request(
         }
 
         identities.for_each(|identity| {
-            let message = IdentitiesEvent::new(
+            let message = IdentityEvent::new(
                 Uuid::new_v4(),
-                IdentitiesEventPayload {
+                IdentityEventPayload {
                     identity: identity.clone().into(),
                 },
             );

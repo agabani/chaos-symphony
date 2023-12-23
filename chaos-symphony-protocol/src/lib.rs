@@ -6,6 +6,7 @@
 mod authenticate;
 mod client_authority;
 mod identities;
+mod identity;
 mod message;
 mod ping;
 mod replicate;
@@ -18,6 +19,7 @@ mod types;
 pub use authenticate::*;
 pub use client_authority::*;
 pub use identities::*;
+pub use identity::*;
 pub use message::*;
 pub use ping::*;
 pub use replicate::*;
