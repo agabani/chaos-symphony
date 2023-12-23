@@ -5,7 +5,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
 
-use crate::Message;
+use crate::{Identity, Message};
 
 /*
  * ============================================================================
@@ -66,7 +66,10 @@ impl IdentitiesEvent {
 /// Identities Event Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct IdentitiesEventPayload {}
+pub struct IdentitiesEventPayload {
+    /// Identity.
+    pub identity: Identity,
+}
 
 /*
  * ============================================================================
@@ -90,6 +93,21 @@ impl IdentitiesRequest {
             endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
+    }
+
+    /// Try send.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected.
+    pub fn try_send(
+        self,
+        endpoint: &NetworkEndpoint,
+    ) -> Result<IdentitiesCallback, SendError<NetworkSend>> {
+        let id = self.id;
+        endpoint
+            .try_send_blocking(self.into())
+            .map(|future| IdentitiesCallback { id, future })
     }
 }
 
@@ -121,9 +139,24 @@ impl IdentitiesResponse {
             payload,
         }
     }
+
+    /// Try send.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if bevy-tokio bridge is disconnected.
+    pub fn try_send(self, endpoint: &NetworkEndpoint) -> Result<(), SendError<NetworkSend>> {
+        endpoint.try_send_non_blocking(self.into())
+    }
 }
 
 /// Identities Response Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct IdentitiesResponsePayload {}
+pub enum IdentitiesResponsePayload {
+    /// Failure.
+    Failure,
+
+    /// Success.
+    Success,
+}

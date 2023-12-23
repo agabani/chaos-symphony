@@ -5,6 +5,8 @@
 
 /// Authority.
 pub mod authority;
+/// Identities;
+pub mod identities;
 /// Identity.
 pub mod identity;
 /// Network.
