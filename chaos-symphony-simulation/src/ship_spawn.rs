@@ -5,7 +5,7 @@ use bevy::{
 };
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
-    ship::{Ship, ShipBundle},
+    ship::Ship,
     transform::Transformation,
     types::{ClientAuthority, Identity, ServerAuthority},
 };
@@ -59,33 +59,33 @@ pub fn request(
             return;
         };
 
-        let bundle = ShipBundle {
-            ship: Ship,
-            identity: Identity::new("ship".to_string(), Uuid::new_v4()),
-            client_authority: ClientAuthority::new(client_authority.clone().into()),
-            server_authority: ServerAuthority::new(server_authority.clone().into()),
-            transformation: Transformation {
-                orientation: DQuat::from_rotation_z(0.0),
-                position: DVec3::ZERO,
-            },
-        };
+        // let bundle = ShipBundle {
+        //     ship: Ship,
+        //     identity: Identity::new("ship".to_string(), Uuid::new_v4()),
+        //     client_authority: ClientAuthority::new(client_authority.clone().into()),
+        //     server_authority: ServerAuthority::new(server_authority.clone().into()),
+        //     transformation: Transformation {
+        //         orientation: DQuat::from_rotation_z(0.0),
+        //         position: DVec3::ZERO,
+        //     },
+        // };
 
-        let response = ShipSpawnResponse::new(
-            message.inner.id,
-            ShipSpawnResponsePayload::Success(ShipSpawnResponsePayloadSuccess {
-                identity: bundle.identity.clone().into(),
-                // client_authority: bundle.client_authority.identity().clone().into(),
-                // server_authority: bundle.server_authority.identity().clone().into(),
-                // transformation: bundle.transformation.into(),
-            }),
-        );
+        // let response = ShipSpawnResponse::new(
+        //     message.inner.id,
+        //     ShipSpawnResponsePayload::Success(ShipSpawnResponsePayloadSuccess {
+        //         identity: bundle.identity.clone().into(),
+        //         // client_authority: bundle.client_authority.identity().clone().into(),
+        //         // server_authority: bundle.server_authority.identity().clone().into(),
+        //         // transformation: bundle.transformation.into(),
+        //     }),
+        // );
 
-        if response.try_send(endpoint).is_err() {
-            error!("failed to send response to endpoint");
-            return;
-        }
+        // if response.try_send(endpoint).is_err() {
+        //     error!("failed to send response to endpoint");
+        //     return;
+        // }
 
-        info!(identity =? bundle.identity.id(), "spawned");
-        commands.spawn(bundle);
+        // info!(identity =? bundle.identity.id(), "spawned");
+        // commands.spawn(bundle);
     });
 }
