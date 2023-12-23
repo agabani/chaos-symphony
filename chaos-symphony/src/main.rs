@@ -22,6 +22,7 @@ use chaos_symphony_ecs::{
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
+    replicate::ReplicatePlugin,
     ship_spawn::ShipSpawnPlugin,
     transform::Transformation,
     types::Identity,
@@ -67,6 +68,7 @@ async fn main() {
         NetworkKeepAlivePlugin,
     ))
     .add_plugins(IdentitiesPlugin)
+    .add_plugins(ReplicatePlugin)
     .add_plugins(ShipPlugin)
     .add_plugins(ShipSpawnPlugin)
     .add_plugins(TransformationPlugin)

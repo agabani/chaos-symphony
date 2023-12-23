@@ -15,5 +15,6 @@ pub use authenticate::*;
 pub use identities::*;
 pub use message::*;
 pub use ping::*;
+pub use replicate::*;
 pub use ship_spawn::*;
 pub use types::*;

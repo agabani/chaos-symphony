@@ -73,7 +73,10 @@ impl ReplicateRequest {
 /// Replicate Request Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ReplicateRequestPayload {}
+pub struct ReplicateRequestPayload {
+    /// Identity.
+    pub identity: Identity,
+}
 
 /*
  * ============================================================================
