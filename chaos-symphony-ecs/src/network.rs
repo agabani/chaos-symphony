@@ -5,7 +5,7 @@ use chaos_symphony_protocol::IdentitiesEvent;
 
 /// Network Endpoint Id.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Copy, Component)]
 pub struct NetworkEndpointId {
     /// Inner.
     pub inner: usize,

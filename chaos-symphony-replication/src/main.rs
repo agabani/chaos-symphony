@@ -5,7 +5,9 @@
 
 mod authenticate;
 mod identities;
+mod replicate;
 mod ship_spawn;
+mod types;
 
 use std::sync::mpsc::TryRecvError;
 
@@ -19,9 +21,10 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use chaos_symphony_protocol::{
-    AuthenticateRequest, IdentitiesRequest, PingEvent, ShipSpawnRequest,
+    AuthenticateRequest, IdentitiesRequest, PingEvent, ReplicateRequest, ShipSpawnRequest,
 };
 use identities::IdentitiesPlugin;
+use replicate::ReplicatePlugin;
 
 #[tokio::main]
 async fn main() {
@@ -49,7 +52,7 @@ async fn main() {
         },
         NetworkDisconnectPlugin,
     ))
-    .add_plugins(IdentitiesPlugin)
+    .add_plugins((IdentitiesPlugin, ReplicatePlugin))
     .add_systems(Update, (accepted, route, authenticate::request))
     .add_systems(
         Update,
@@ -115,6 +118,16 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
                         },
                         NetworkMessage {
                             inner: IdentitiesRequest::from(message),
+                        },
+                    ));
+                }
+                ReplicateRequest::ENDPOINT => {
+                    commands.spawn((
+                        NetworkEndpointId {
+                            inner: endpoint.id(),
+                        },
+                        NetworkMessage {
+                            inner: ReplicateRequest::from(message),
                         },
                     ));
                 }
