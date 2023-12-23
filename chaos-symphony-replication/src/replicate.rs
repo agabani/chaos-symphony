@@ -53,12 +53,18 @@ fn request(
         if !identities.iter().any(|i| *i == identity) {
             warn!("identity does not exist");
 
-            let response = ReplicateResponse::new(message.id, ReplicateResponsePayload::Success);
+            let response = ReplicateResponse::new(message.id, ReplicateResponsePayload::Failure);
             if response.try_send(endpoint).is_err() {
                 warn!("failed to send response");
                 return;
             }
 
+            return;
+        }
+
+        let response = ReplicateResponse::new(message.id, ReplicateResponsePayload::Success);
+        if response.try_send(endpoint).is_err() {
+            warn!("failed to send response");
             return;
         }
 
