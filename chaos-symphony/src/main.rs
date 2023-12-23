@@ -18,7 +18,7 @@ use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     identities::IdentitiesPlugin,
     identity::Identity,
-    network::{NetworkEndpointId, NetworkMessage},
+    network::{self, NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
@@ -27,7 +27,7 @@ use chaos_symphony_ecs::{
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::{IdentitiesEvent, ShipSpawnEvent};
+use chaos_symphony_protocol::ShipSpawnEvent;
 use ship::ShipPlugin;
 
 use crate::transformation::TransformationPlugin;
@@ -91,17 +91,12 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
+
+            let Some(message) = network::route(&mut commands, endpoint, message) else {
+                continue;
+            };
+
             match message.endpoint.as_str() {
-                IdentitiesEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: IdentitiesEvent::from(message),
-                        },
-                    ));
-                }
                 ShipSpawnEvent::ENDPOINT => {
                     commands.spawn((
                         NetworkEndpointId {

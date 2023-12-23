@@ -20,6 +20,7 @@ impl Plugin for IdentitiesPlugin {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn request(
     mut commands: Commands,
     messages: Query<(
@@ -63,7 +64,6 @@ fn request(
             );
             if message.try_send(endpoint).is_err() {
                 warn!("failed to send event");
-                return;
             }
         });
     });

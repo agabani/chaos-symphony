@@ -22,6 +22,7 @@ impl Plugin for IdentitiesPlugin {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallback)>) {
     callbacks.for_each(|(entity, callback)| {
         let span = error_span!("callback", message_id =% callback.id);
@@ -45,6 +46,7 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallbac
     });
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn event(
     mut commands: Commands,
     messages: Query<(Entity, &NetworkMessage<IdentitiesEvent>)>,
@@ -70,6 +72,7 @@ fn event(
     });
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn request(
     mut commands: Commands,
     client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
