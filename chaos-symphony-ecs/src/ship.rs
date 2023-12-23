@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
     transform::Transformation,
+    types::Identity,
 };
 
 /// Ship.

@@ -13,13 +13,13 @@ use bevy::{
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    identity::Identity,
     network::{NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
     ship_spawn::ShipSpawnPlugin,
+    types::Identity,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest};

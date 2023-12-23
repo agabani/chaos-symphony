@@ -8,8 +8,8 @@ use chaos_symphony_protocol::{
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
     network::NetworkMessage,
+    types::Identity,
 };
 
 /// Identities Plugin.

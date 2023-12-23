@@ -17,7 +17,6 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     identities::IdentitiesPlugin,
-    identity::Identity,
     network::{self, NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
@@ -25,6 +24,7 @@ use chaos_symphony_ecs::{
     network_keep_alive::NetworkKeepAlivePlugin,
     ship_spawn::ShipSpawnPlugin,
     transform::Transformation,
+    types::Identity,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 use chaos_symphony_protocol::ShipSpawnEvent;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::identity::Identity;
+use crate::types::Identity;
 
 /// Client Authority.
 #[allow(clippy::module_name_repetitions)]

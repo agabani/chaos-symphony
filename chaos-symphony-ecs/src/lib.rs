@@ -25,3 +25,5 @@ pub mod ship;
 pub mod ship_spawn;
 /// Transform.
 pub mod transform;
+/// Types.
+pub mod types;

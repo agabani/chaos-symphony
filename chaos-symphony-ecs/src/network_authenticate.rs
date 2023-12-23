@@ -10,7 +10,7 @@ use chaos_symphony_protocol::{
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
+    types::Identity,
 };
 
 /// Network Authenticate Plugin.

@@ -4,9 +4,9 @@ use tracing::instrument;
 
 use crate::{
     authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
     network::NetworkMessage,
     ship::{Ship, ShipBundle},
+    types::Identity,
 };
 
 /// Ship Spawn Plugin.

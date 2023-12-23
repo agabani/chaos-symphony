@@ -2,10 +2,10 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
     network::{NetworkEndpointId, NetworkMessage},
     ship::{Ship, ShipBundle},
     transform::Transformation,
+    types::Identity,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
