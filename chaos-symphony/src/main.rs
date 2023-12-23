@@ -16,6 +16,7 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
+    identities::IdentitiesPlugin,
     identity::Identity,
     network::{NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
@@ -65,6 +66,7 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
+    .add_plugins(IdentitiesPlugin)
     .add_plugins(ShipPlugin)
     .add_plugins(ShipSpawnPlugin)
     .add_plugins(TransformationPlugin)
