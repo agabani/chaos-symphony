@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{ClientAuthorityEvent, IdentitiesEvent};
+use chaos_symphony_protocol::{ClientAuthorityEvent, IdentitiesEvent, ServerAuthorityEvent};
 
 /// Network Endpoint Id.
 #[allow(clippy::module_name_repetitions)]
@@ -44,6 +44,17 @@ pub fn route(
                 },
                 NetworkMessage {
                     inner: IdentitiesEvent::from(message),
+                },
+            ));
+            None
+        }
+        ServerAuthorityEvent::ENDPOINT => {
+            commands.spawn((
+                NetworkEndpointId {
+                    inner: endpoint.id(),
+                },
+                NetworkMessage {
+                    inner: ServerAuthorityEvent::from(message),
                 },
             ));
             None

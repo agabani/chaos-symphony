@@ -1,16 +1,16 @@
 use bevy::prelude::*;
-use chaos_symphony_protocol::ClientAuthorityEvent;
+use chaos_symphony_protocol::ServerAuthorityEvent;
 
 use crate::{
     network::NetworkMessage,
-    types::{ClientAuthority, Identity},
+    types::{Identity, ServerAuthority},
 };
 
-/// Client Authority Plugin.
+/// Server Authority Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct ClientAuthorityPlugin;
+pub struct ServerAuthorityPlugin;
 
-impl Plugin for ClientAuthorityPlugin {
+impl Plugin for ServerAuthorityPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, event);
     }
@@ -19,7 +19,7 @@ impl Plugin for ClientAuthorityPlugin {
 #[allow(clippy::needless_pass_by_value)]
 fn event(
     mut commands: Commands,
-    messages: Query<(Entity, &NetworkMessage<ClientAuthorityEvent>)>,
+    messages: Query<(Entity, &NetworkMessage<ServerAuthorityEvent>)>,
     identities: Query<(Entity, &Identity)>,
 ) {
     messages.for_each(|(entity, message)| {
@@ -41,6 +41,6 @@ fn event(
         info!(identity =% message.payload.identity, "inserted");
         commands
             .entity(entity)
-            .insert(ClientAuthority::new(authority));
+            .insert(ServerAuthority::new(authority));
     });
 }

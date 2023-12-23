@@ -21,6 +21,8 @@ pub mod network_disconnect;
 pub mod network_keep_alive;
 /// Replicate.
 pub mod replicate;
+/// Server Authority.
+pub mod server_authority;
 /// Ship.
 pub mod ship;
 /// Ship Spawn.
