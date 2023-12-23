@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    ClientAuthorityEvent, IdentitiesEvent, ServerAuthorityEvent, TransformationEvent,
+    ClientAuthorityEvent, IdentitiesEvent, ServerAuthorityEvent, ShipEvent, TransformationEvent,
 };
 
 /// Network Endpoint Id.
@@ -57,6 +57,17 @@ pub fn route(
                 },
                 NetworkMessage {
                     inner: ServerAuthorityEvent::from(message),
+                },
+            ));
+            None
+        }
+        ShipEvent::ENDPOINT => {
+            commands.spawn((
+                NetworkEndpointId {
+                    inner: endpoint.id(),
+                },
+                NetworkMessage {
+                    inner: ShipEvent::from(message),
                 },
             ));
             None

@@ -60,6 +60,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             identities::IdentitiesPlugin,
             replicate::ReplicatePlugin,
             server_authority::ServerAuthorityPlugin,
+            ship::ShipPlugin,
             transformation::TransformationPlugin,
         ));
 

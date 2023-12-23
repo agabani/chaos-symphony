@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
+    ship::Ship,
     transform::Transformation,
     types::{ClientAuthority, Identity, ServerAuthority},
 };
@@ -69,6 +70,11 @@ fn request(
         commands.spawn((
             *endpoint_id,
             Replicate::<ServerAuthority>::new(identity.clone()),
+        ));
+        commands.spawn((
+            //
+            *endpoint_id,
+            Replicate::<Ship>::new(identity.clone()),
         ));
         commands.spawn((
             *endpoint_id,

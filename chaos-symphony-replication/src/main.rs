@@ -8,6 +8,7 @@ mod client_authority;
 mod identities;
 mod replicate;
 mod server_authority;
+mod ship;
 mod ship_spawn;
 mod transformation;
 mod types;
@@ -30,6 +31,7 @@ use client_authority::ClientAuthorityPlugin;
 use identities::IdentitiesPlugin;
 use replicate::ReplicatePlugin;
 use server_authority::ServerAuthorityPlugin;
+use ship::ShipPlugin;
 use transformation::TransformationPlugin;
 
 #[tokio::main]
@@ -63,6 +65,7 @@ async fn main() {
         IdentitiesPlugin,
         ReplicatePlugin,
         ServerAuthorityPlugin,
+        ShipPlugin,
         TransformationPlugin,
     ))
     .add_systems(Update, (accepted, route, authenticate::request))
