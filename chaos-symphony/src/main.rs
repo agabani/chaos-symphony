@@ -27,7 +27,7 @@ use chaos_symphony_ecs::{
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::ShipSpawnEvent;
+use chaos_symphony_protocol::{IdentitiesEvent, ShipSpawnEvent};
 use ship::ShipPlugin;
 
 use crate::transformation::TransformationPlugin;
@@ -92,6 +92,16 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
             match message.endpoint.as_str() {
+                IdentitiesEvent::ENDPOINT => {
+                    commands.spawn((
+                        NetworkEndpointId {
+                            inner: endpoint.id(),
+                        },
+                        NetworkMessage {
+                            inner: IdentitiesEvent::from(message),
+                        },
+                    ));
+                }
                 ShipSpawnEvent::ENDPOINT => {
                     commands.spawn((
                         NetworkEndpointId {
