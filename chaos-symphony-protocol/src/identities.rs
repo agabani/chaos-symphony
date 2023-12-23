@@ -5,7 +5,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
 
-use crate::{Identity, Message};
+use crate::Message;
 
 /*
  * ============================================================================

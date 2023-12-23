@@ -25,8 +25,6 @@ pub mod replicate;
 pub mod server_authority;
 /// Ship.
 pub mod ship;
-/// Ship Spawn.
-pub mod ship_spawn;
 /// Transform.
 pub mod transform;
 /// Transformation.

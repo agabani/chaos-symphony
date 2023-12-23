@@ -14,7 +14,7 @@ use bevy::{
     utils::Uuid,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use chaos_symphony_ecs::{network, ship_spawn::ShipSpawnPlugin, types::Identity};
+use chaos_symphony_ecs::{network, types::Identity};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 use ship::ShipPlugin;
 
@@ -40,7 +40,6 @@ async fn main() {
     )
     .add_plugins(WorldInspectorPlugin::new())
     .add_plugins(ShipPlugin)
-    .add_plugins(ShipSpawnPlugin)
     .add_plugins(chaos_symphony_ecs::DefaultPlugins {
         identity: Identity::new(
             "client".to_string(),
@@ -69,16 +68,6 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
             };
 
             match message.endpoint.as_str() {
-                // ShipSpawnEvent::ENDPOINT => {
-                //     commands.spawn((
-                //         NetworkEndpointId {
-                //             inner: endpoint.id(),
-                //         },
-                //         NetworkMessage {
-                //             inner: ShipSpawnEvent::from(message),
-                //         },
-                //     ));
-                // }
                 endpoint => {
                     warn!(endpoint, "unhandled");
                 }

@@ -74,9 +74,9 @@ pub fn request(
             message.inner.id,
             ShipSpawnResponsePayload::Success(ShipSpawnResponsePayloadSuccess {
                 identity: bundle.identity.clone().into(),
-                client_authority: bundle.client_authority.identity().clone().into(),
-                server_authority: bundle.server_authority.identity().clone().into(),
-                transformation: bundle.transformation.into(),
+                // client_authority: bundle.client_authority.identity().clone().into(),
+                // server_authority: bundle.server_authority.identity().clone().into(),
+                // transformation: bundle.transformation.into(),
             }),
         );
 

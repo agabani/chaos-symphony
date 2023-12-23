@@ -75,9 +75,9 @@ async fn main() {
     .add_systems(
         Update,
         (
-            ship_spawn::broadcast,
+            // ship_spawn::broadcast,
             ship_spawn::callback,
-            ship_spawn::replicate,
+            // ship_spawn::replicate,
             ship_spawn::request,
         ),
     );

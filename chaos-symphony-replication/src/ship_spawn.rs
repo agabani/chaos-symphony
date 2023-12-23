@@ -8,8 +8,7 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    ShipSpawnEvent, ShipSpawnEventPayload, ShipSpawnRequest, ShipSpawnResponse,
-    ShipSpawnResponsePayload, ShipSpawning,
+    ShipSpawnRequest, ShipSpawnResponse, ShipSpawnResponsePayload, ShipSpawning,
 };
 use tracing::instrument;
 
@@ -70,17 +69,17 @@ pub fn callback(
                 };
 
                 // overwrite
-                success.client_authority = client_authority.identity().clone().into();
-                success.server_authority = server_authority.identity().clone().into();
+                // success.client_authority = client_authority.identity().clone().into();
+                // success.server_authority = server_authority.identity().clone().into();
 
                 info!(identity =? success.identity, "spawned");
-                commands.spawn(ShipBundle {
-                    ship: Ship,
-                    identity: success.identity.clone().into(),
-                    client_authority: client_authority.clone(),
-                    server_authority: server_authority.clone(),
-                    transformation: success.transformation.into(),
-                });
+                // commands.spawn(ShipBundle {
+                //     ship: Ship,
+                //     identity: success.identity.clone().into(),
+                //     client_authority: client_authority.clone(),
+                //     server_authority: server_authority.clone(),
+                //     transformation: success.transformation.into(),
+                // });
 
                 let Some(endpoint) = endpoint else {
                     warn!("client endpoint not found");
@@ -168,101 +167,101 @@ pub fn request(
     });
 }
 
-#[allow(clippy::needless_pass_by_value)]
-pub fn broadcast(
-    ships: Query<
-        (
-            &Identity,
-            &ClientAuthority,
-            &ServerAuthority,
-            &Transformation,
-        ),
-        Added<Ship>,
-    >,
-    client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
-) {
-    ships.for_each(
-        |(identity, client_authority, server_authority, transformation)| {
-            let span = error_span!("broadcast", identity_id =? identity);
-            let _guard = span.enter();
+// #[allow(clippy::needless_pass_by_value)]
+// pub fn broadcast(
+//     ships: Query<
+//         (
+//             &Identity,
+//             &ClientAuthority,
+//             &ServerAuthority,
+//             &Transformation,
+//         ),
+//         Added<Ship>,
+//     >,
+//     client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
+//     server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
+// ) {
+//     ships.for_each(
+//         |(identity, client_authority, server_authority, transformation)| {
+//             let span = error_span!("broadcast", identity_id =? identity);
+//             let _guard = span.enter();
 
-            server_endpoints
-                .iter()
-                .chain(client_endpoints.iter())
-                .for_each(|endpoint| {
-                    let id = Uuid::new_v4();
+//             server_endpoints
+//                 .iter()
+//                 .chain(client_endpoints.iter())
+//                 .for_each(|endpoint| {
+//                     let id = Uuid::new_v4();
 
-                    let span = error_span!(
-                        "broadcast",
-                        endpoint_id = endpoint.id(),
-                        identity_id =? identity.id(),
-                        message_id =% id
-                    );
-                    let _guard = span.enter();
+//                     let span = error_span!(
+//                         "broadcast",
+//                         endpoint_id = endpoint.id(),
+//                         identity_id =? identity.id(),
+//                         message_id =% id
+//                     );
+//                     let _guard = span.enter();
 
-                    let event = ShipSpawnEvent::new(
-                        id,
-                        ShipSpawnEventPayload {
-                            identity: identity.clone().into(),
-                            client_authority: client_authority.identity().clone().into(),
-                            server_authority: server_authority.identity().clone().into(),
-                            transformation: (*transformation).into(),
-                        },
-                    );
+//                     let event = ShipSpawnEvent::new(
+//                         id,
+//                         ShipSpawnEventPayload {
+//                             identity: identity.clone().into(),
+//                             client_authority: client_authority.identity().clone().into(),
+//                             server_authority: server_authority.identity().clone().into(),
+//                             transformation: (*transformation).into(),
+//                         },
+//                     );
 
-                    if event.try_send(endpoint).is_err() {
-                        warn!("failed to send event to client");
-                    }
-                });
-        },
-    );
-}
+//                     if event.try_send(endpoint).is_err() {
+//                         warn!("failed to send event to client");
+//                     }
+//                 });
+//         },
+//     );
+// }
 
-#[allow(clippy::needless_pass_by_value)]
-pub fn replicate(
-    client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, Added<ServerAuthority>>,
-    ships: Query<(
-        &Identity,
-        &ClientAuthority,
-        &ServerAuthority,
-        &Transformation,
-    )>,
-) {
-    server_endpoints
-        .iter()
-        .chain(client_endpoints.iter())
-        .for_each(|endpoint| {
-            let span = error_span!("replicate", endpoint_id = endpoint.id());
-            let _guard = span.enter();
+// #[allow(clippy::needless_pass_by_value)]
+// pub fn replicate(
+//     client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
+//     server_endpoints: Query<&NetworkEndpoint, Added<ServerAuthority>>,
+//     ships: Query<(
+//         &Identity,
+//         &ClientAuthority,
+//         &ServerAuthority,
+//         &Transformation,
+//     )>,
+// ) {
+//     server_endpoints
+//         .iter()
+//         .chain(client_endpoints.iter())
+//         .for_each(|endpoint| {
+//             let span = error_span!("replicate", endpoint_id = endpoint.id());
+//             let _guard = span.enter();
 
-            ships.for_each(
-                |(identity, client_authority, server_authority, transformation)| {
-                    let id = Uuid::new_v4();
+//             ships.for_each(
+//                 |(identity, client_authority, server_authority, transformation)| {
+//                     let id = Uuid::new_v4();
 
-                    let span = error_span!(
-                        "replicate",
-                        endpoint_id = endpoint.id(),
-                        identity_id =% identity.id(),
-                        message_id =% id
-                    );
-                    let _guard = span.enter();
+//                     let span = error_span!(
+//                         "replicate",
+//                         endpoint_id = endpoint.id(),
+//                         identity_id =% identity.id(),
+//                         message_id =% id
+//                     );
+//                     let _guard = span.enter();
 
-                    let event = ShipSpawnEvent::new(
-                        id,
-                        ShipSpawnEventPayload {
-                            identity: identity.clone().into(),
-                            client_authority: client_authority.identity().clone().into(),
-                            server_authority: server_authority.identity().clone().into(),
-                            transformation: (*transformation).into(),
-                        },
-                    );
+//                     let event = ShipSpawnEvent::new(
+//                         id,
+//                         ShipSpawnEventPayload {
+//                             identity: identity.clone().into(),
+//                             client_authority: client_authority.identity().clone().into(),
+//                             server_authority: server_authority.identity().clone().into(),
+//                             transformation: (*transformation).into(),
+//                         },
+//                     );
 
-                    if event.try_send(endpoint).is_err() {
-                        warn!("failed to send event to client");
-                    }
-                },
-            );
-        });
-}
+//                     if event.try_send(endpoint).is_err() {
+//                         warn!("failed to send event to client");
+//                     }
+//                 },
+//             );
+//         });
+// }
