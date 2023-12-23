@@ -8,6 +8,6 @@ client requests identities: `/request/identities`
 
 - replication streams identities to client: `/response/identities`, `/event/identities`
 
-client request properties for identity: `/request/properties`
+client request replication for identity: `/request/replication`
 
-- replication streams properties to client: `/response/properties`, `/event/*`
+- replication streams replication to client: `/response/replication`, `/event/*`

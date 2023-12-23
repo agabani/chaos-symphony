@@ -7,6 +7,7 @@ mod authenticate;
 mod identities;
 mod message;
 mod ping;
+mod replicate;
 mod ship_spawn;
 mod types;
 
