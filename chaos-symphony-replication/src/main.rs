@@ -4,8 +4,10 @@
 //! Chaos Symphony Replication
 
 mod authenticate;
+mod client_authority;
 mod identities;
 mod replicate;
+mod server_authority;
 mod ship_spawn;
 mod types;
 
@@ -23,8 +25,10 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, N
 use chaos_symphony_protocol::{
     AuthenticateRequest, IdentitiesRequest, PingEvent, ReplicateRequest, ShipSpawnRequest,
 };
+use client_authority::ClientAuthorityPlugin;
 use identities::IdentitiesPlugin;
 use replicate::ReplicatePlugin;
+use server_authority::ServerAuthorityPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -52,7 +56,12 @@ async fn main() {
         },
         NetworkDisconnectPlugin,
     ))
-    .add_plugins((IdentitiesPlugin, ReplicatePlugin))
+    .add_plugins((
+        ClientAuthorityPlugin,
+        IdentitiesPlugin,
+        ReplicatePlugin,
+        ServerAuthorityPlugin,
+    ))
     .add_systems(Update, (accepted, route, authenticate::request))
     .add_systems(
         Update,
