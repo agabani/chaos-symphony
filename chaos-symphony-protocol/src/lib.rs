@@ -4,14 +4,14 @@
 //! Chaos Symphony Protocol
 
 mod authenticate;
-mod identity;
+mod identities;
 mod message;
 mod ping;
 mod ship_spawn;
 mod types;
 
 pub use authenticate::*;
-pub use identity::*;
+pub use identities::*;
 pub use message::*;
 pub use ping::*;
 pub use ship_spawn::*;
