@@ -3,7 +3,9 @@
 
 //! Chaos Symphony ECS
 
-/// Identities;
+/// Client Authority.
+pub mod client_authority;
+/// Identities.
 pub mod identities;
 /// Identity.
 pub mod identity;

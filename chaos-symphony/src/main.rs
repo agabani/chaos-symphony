@@ -15,6 +15,7 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
+    client_authority::ClientAuthorityPlugin,
     identities::IdentitiesPlugin,
     network::{self, NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
@@ -66,7 +67,7 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_plugins(IdentitiesPlugin)
+    .add_plugins((ClientAuthorityPlugin, IdentitiesPlugin))
     .add_plugins(ReplicatePlugin)
     .add_plugins(ShipPlugin)
     .add_plugins(ShipSpawnPlugin)
@@ -98,16 +99,16 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
             };
 
             match message.endpoint.as_str() {
-                ShipSpawnEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnEvent::from(message),
-                        },
-                    ));
-                }
+                // ShipSpawnEvent::ENDPOINT => {
+                //     commands.spawn((
+                //         NetworkEndpointId {
+                //             inner: endpoint.id(),
+                //         },
+                //         NetworkMessage {
+                //             inner: ShipSpawnEvent::from(message),
+                //         },
+                //     ));
+                // }
                 endpoint => {
                     warn!(endpoint, "unhandled");
                 }
