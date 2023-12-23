@@ -8,11 +8,11 @@ mod identity;
 mod message;
 mod ping;
 mod ship_spawn;
-mod transformation;
+mod types;
 
 pub use authenticate::*;
 pub use identity::*;
 pub use message::*;
 pub use ping::*;
 pub use ship_spawn::*;
-pub use transformation::*;
+pub use types::*;
