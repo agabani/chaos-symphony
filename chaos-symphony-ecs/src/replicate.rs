@@ -5,10 +5,7 @@ use chaos_symphony_protocol::{
     ReplicateCallback, ReplicateRequest, ReplicateRequestPayload, ReplicateResponsePayload,
 };
 
-use crate::{
-    authority::{ClientAuthority, ServerAuthority},
-    types::Identity,
-};
+use crate::types::{ClientAuthority, Identity, ServerAuthority};
 
 /// Replicate Plugin.
 #[allow(clippy::module_name_repetitions)]

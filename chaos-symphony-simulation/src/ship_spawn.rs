@@ -4,11 +4,10 @@ use bevy::{
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
     network::{NetworkEndpointId, NetworkMessage},
     ship::{Ship, ShipBundle},
     transform::Transformation,
-    types::Identity,
+    types::{ClientAuthority, Identity, ServerAuthority},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{

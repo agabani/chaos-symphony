@@ -8,10 +8,7 @@ use chaos_symphony_protocol::{
     AuthenticateRequest, AuthenticateRequestPayload, AuthenticateResponsePayload, Authenticating,
 };
 
-use crate::{
-    authority::{ClientAuthority, ServerAuthority},
-    types::Identity,
-};
+use crate::types::{ClientAuthority, Identity, ServerAuthority};
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]

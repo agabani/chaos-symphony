@@ -1,8 +1,8 @@
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
     ship::{Ship, ShipBundle},
+    types::{ClientAuthority, ServerAuthority},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{

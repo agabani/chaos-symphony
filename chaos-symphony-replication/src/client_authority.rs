@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_ecs::{authority::ClientAuthority, network::NetworkEndpointId, types::Identity};
+use chaos_symphony_ecs::{network::NetworkEndpointId, types::ClientAuthority, types::Identity};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{ClientAuthorityEvent, ClientAuthorityEventPayload};
 

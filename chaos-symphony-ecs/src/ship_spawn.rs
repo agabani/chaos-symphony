@@ -3,10 +3,9 @@ use chaos_symphony_protocol::ShipSpawnEvent;
 use tracing::instrument;
 
 use crate::{
-    authority::{ClientAuthority, ServerAuthority},
     network::NetworkMessage,
     ship::{Ship, ShipBundle},
-    types::Identity,
+    types::{ClientAuthority, Identity, ServerAuthority},
 };
 
 /// Ship Spawn Plugin.

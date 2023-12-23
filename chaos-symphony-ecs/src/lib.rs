@@ -3,8 +3,6 @@
 
 //! Chaos Symphony ECS
 
-/// Authority.
-pub mod authority;
 /// Identities;
 pub mod identities;
 /// Identity.

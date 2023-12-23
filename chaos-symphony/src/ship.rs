@@ -1,7 +1,7 @@
 use bevy::{prelude::*, render::mesh::shape::RegularPolygon, sprite::MaterialMesh2dBundle};
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
     ship::Ship,
+    types::{ClientAuthority, ServerAuthority},
 };
 
 /// Ship Plugin.
