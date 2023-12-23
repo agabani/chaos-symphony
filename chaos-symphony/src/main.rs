@@ -72,6 +72,7 @@ async fn main() {
         ClientAuthorityPlugin,
         IdentitiesPlugin,
         ServerAuthorityPlugin,
+        chaos_symphony_ecs::transformation::TransformationPlugin,
     ))
     .add_plugins(ReplicatePlugin)
     .add_plugins(ShipPlugin)

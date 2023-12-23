@@ -11,6 +11,7 @@ mod ping;
 mod replicate;
 mod server_authority;
 mod ship_spawn;
+mod transformation;
 mod types;
 
 pub use authenticate::*;
@@ -21,4 +22,5 @@ pub use ping::*;
 pub use replicate::*;
 pub use server_authority::*;
 pub use ship_spawn::*;
+pub use transformation::*;
 pub use types::*;

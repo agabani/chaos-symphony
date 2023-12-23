@@ -9,6 +9,7 @@ mod identities;
 mod replicate;
 mod server_authority;
 mod ship_spawn;
+mod transformation;
 mod types;
 
 use std::sync::mpsc::TryRecvError;
@@ -29,6 +30,7 @@ use client_authority::ClientAuthorityPlugin;
 use identities::IdentitiesPlugin;
 use replicate::ReplicatePlugin;
 use server_authority::ServerAuthorityPlugin;
+use transformation::TransformationPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -61,6 +63,7 @@ async fn main() {
         IdentitiesPlugin,
         ReplicatePlugin,
         ServerAuthorityPlugin,
+        TransformationPlugin,
     ))
     .add_systems(Update, (accepted, route, authenticate::request))
     .add_systems(
