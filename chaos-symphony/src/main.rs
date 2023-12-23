@@ -14,22 +14,8 @@ use bevy::{
     utils::Uuid,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use chaos_symphony_ecs::{
-    client_authority::ClientAuthorityPlugin,
-    identities::IdentitiesPlugin,
-    network::{self, NetworkEndpointId, NetworkMessage},
-    network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin,
-    network_keep_alive::NetworkKeepAlivePlugin,
-    replicate::ReplicatePlugin,
-    server_authority::ServerAuthorityPlugin,
-    ship_spawn::ShipSpawnPlugin,
-    transform::Transformation,
-    types::{ClientAuthority, Identity, ServerAuthority},
-};
-use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::ShipSpawnEvent;
+use chaos_symphony_ecs::{network, ship_spawn::ShipSpawnPlugin, types::Identity};
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 use ship::ShipPlugin;
 
 use crate::transformation::TransformationPlugin;
@@ -53,39 +39,17 @@ async fn main() {
         }),
     )
     .add_plugins(WorldInspectorPlugin::new())
-    .add_plugins((
-        NetworkPlugin {
-            client: true,
-            server: false,
-        },
-        NetworkAuthenticatePlugin {
-            identity: Identity::new(
-                "client".to_string(),
-                Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
-            ),
-        },
-        NetworkConnectPlugin,
-        NetworkDisconnectPlugin,
-        NetworkKeepAlivePlugin,
-    ))
-    .add_plugins((
-        ClientAuthorityPlugin,
-        IdentitiesPlugin,
-        ServerAuthorityPlugin,
-        chaos_symphony_ecs::transformation::TransformationPlugin,
-    ))
-    .add_plugins(ReplicatePlugin)
     .add_plugins(ShipPlugin)
     .add_plugins(ShipSpawnPlugin)
+    .add_plugins(chaos_symphony_ecs::DefaultPlugins {
+        identity: Identity::new(
+            "client".to_string(),
+            Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
+        ),
+    })
     .add_plugins(TransformationPlugin)
     .add_systems(Startup, camera)
     .add_systems(Update, route);
-
-    app.register_type::<ClientAuthority>()
-        .register_type::<ServerAuthority>()
-        .register_type::<Identity>()
-        .register_type::<Transformation>()
-        .register_type::<Uuid>();
 
     app.run();
 }
