@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::{prelude::*, utils::Uuid};
 
 /// Identity.
@@ -85,5 +87,24 @@ impl ServerAuthority {
     #[must_use]
     pub fn identity(&self) -> &Identity {
         &self.identity
+    }
+}
+
+/// Replicate.
+#[derive(Debug, Clone, Component)]
+pub struct Replicate<T> {
+    /// Identity.
+    pub identity: Identity,
+
+    marker: PhantomData<T>,
+}
+
+impl<T> Replicate<T> {
+    /// Creates a new [`Replicate`].
+    pub fn new(identity: Identity) -> Self {
+        Self {
+            identity,
+            marker: PhantomData,
+        }
     }
 }
