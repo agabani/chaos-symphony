@@ -14,6 +14,7 @@ use crate::{Identity, Message};
  */
 
 /// Identities Callback.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Component)]
 pub struct IdentitiesCallback {
     /// Id.
