@@ -5,7 +5,7 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload,
+    AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload, Response as _,
 };
 use tracing::instrument;
 
@@ -49,7 +49,7 @@ pub fn request(
             noun => todo!("{noun}"),
         };
 
-        let response = AuthenticateResponse::new(
+        let response = AuthenticateResponse::message(
             message.inner.id,
             AuthenticateResponsePayload::Success {
                 identity: identity.clone(),

@@ -16,7 +16,7 @@ use chaos_symphony_ecs::{
     network_disconnect::NetworkDisconnectPlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::{AuthenticateRequest, PingEvent};
+use chaos_symphony_protocol::{AuthenticateRequest, Event as _, PingEvent, Request as _};
 
 #[tokio::main]
 async fn main() {

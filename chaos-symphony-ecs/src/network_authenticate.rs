@@ -6,7 +6,7 @@ use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     AuthenticateCallback, AuthenticateRequest, AuthenticateRequestPayload,
-    AuthenticateResponsePayload,
+    AuthenticateResponsePayload, Request as _,
 };
 
 use crate::types::{ClientAuthority, Identity, ServerAuthority};
@@ -44,7 +44,7 @@ fn authenticate(
     endpoints: Query<(Entity, &NetworkEndpoint), Added<NetworkEndpoint>>,
 ) {
     endpoints.for_each(|(entity, endpoint)| {
-        let request = AuthenticateRequest::new(
+        let request = AuthenticateRequest::message(
             Uuid::new_v4(),
             AuthenticateRequestPayload {
                 identity: identity.inner.clone().into(),
