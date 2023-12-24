@@ -8,9 +8,9 @@ use crate::{Message, MessageCallback, Request, Response};
  * ============================================================================
  */
 
-/// Identities Callback.
+/// Entity Identities Callback.
 #[allow(clippy::module_name_repetitions)]
-pub type IdentitiesCallback = MessageCallback<IdentitiesResponse>;
+pub type EntityIdentitiesCallback = MessageCallback<EntityIdentitiesResponse>;
 
 /*
  * ============================================================================
@@ -18,18 +18,18 @@ pub type IdentitiesCallback = MessageCallback<IdentitiesResponse>;
  * ============================================================================
  */
 
-/// Identities Request.
+/// Entity Identities Request.
 #[allow(clippy::module_name_repetitions)]
-pub type IdentitiesRequest = Message<IdentitiesRequestPayload>;
+pub type EntityIdentitiesRequest = Message<EntityIdentitiesRequestPayload>;
 
-impl Request<IdentitiesRequestPayload, IdentitiesResponse> for IdentitiesRequest {
-    const ENDPOINT: &'static str = "/request/identities";
+impl Request<EntityIdentitiesRequestPayload, EntityIdentitiesResponse> for EntityIdentitiesRequest {
+    const ENDPOINT: &'static str = "/request/entity_identities";
 }
 
 /// Identities Request Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct IdentitiesRequestPayload {}
+pub struct EntityIdentitiesRequestPayload {}
 
 /*
  * ============================================================================
@@ -37,18 +37,18 @@ pub struct IdentitiesRequestPayload {}
  * ============================================================================
  */
 
-/// Identities Response.
+/// Entity Identities Response.
 #[allow(clippy::module_name_repetitions)]
-pub type IdentitiesResponse = Message<IdentitiesResponsePayload>;
+pub type EntityIdentitiesResponse = Message<EntityIdentitiesResponsePayload>;
 
-impl Response<IdentitiesResponsePayload> for IdentitiesResponse {
-    const ENDPOINT: &'static str = "/response/identities";
+impl Response<EntityIdentitiesResponsePayload> for EntityIdentitiesResponse {
+    const ENDPOINT: &'static str = "/response/entity_identities";
 }
 
-/// Identities Response Payload.
+/// Entity Identities Response Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IdentitiesResponsePayload {
+pub enum EntityIdentitiesResponsePayload {
     /// Failure.
     Failure,
 

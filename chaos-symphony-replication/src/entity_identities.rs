@@ -1,18 +1,19 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
-    types::NetworkIdentity,
+    types::{EntityIdentity, NetworkIdentity},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    IdentitiesRequest, IdentitiesResponse, IdentitiesResponsePayload, Response,
+    EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload,
+    EntityIdentityEvent, EntityIdentityEventPayload, Event, Response,
 };
 
-/// Identities Plugin.
+/// Entity Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct IdentitiesPlugin;
+pub struct EntityIdentitiesPlugin;
 
-impl Plugin for IdentitiesPlugin {
+impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, request);
     }
@@ -24,9 +25,10 @@ fn request(
     messages: Query<(
         Entity,
         &NetworkEndpointId,
-        &NetworkMessage<IdentitiesRequest>,
+        &NetworkMessage<EntityIdentitiesRequest>,
     )>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    identities: Query<&EntityIdentity>,
 ) {
     messages.for_each(|(entity, endpoint_id, request)| {
         let span = error_span!("request", message_id =% request.inner.id);
@@ -42,13 +44,28 @@ fn request(
             return;
         };
 
-        let response =
-            IdentitiesResponse::message(request.inner.id, IdentitiesResponsePayload::Success);
+        let response = EntityIdentitiesResponse::message(
+            request.inner.id,
+            EntityIdentitiesResponsePayload::Success,
+        );
 
         if response.try_send(endpoint).is_err() {
             warn!("failed to send response");
         }
 
         info!("sent response");
+
+        identities.for_each(|identity| {
+            let request = EntityIdentityEvent::message(
+                Uuid::new_v4(),
+                EntityIdentityEventPayload {
+                    inner: identity.inner.clone().into(),
+                },
+            );
+
+            if request.try_send(endpoint).is_err() {
+                warn!("failed to send event");
+            }
+        });
     });
 }

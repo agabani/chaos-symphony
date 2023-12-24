@@ -3,7 +3,7 @@ use chaos_symphony_ecs::network::{NetworkEndpointId, NetworkMessage};
 use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, Event as _, IdentitiesRequest, PingEvent, Request as _,
+    AuthenticateRequest, EntityIdentitiesRequest, Event as _, PingEvent, Request as _,
 };
 
 /// Route.
@@ -24,13 +24,13 @@ pub fn route(
             ));
             None
         }
-        IdentitiesRequest::ENDPOINT => {
+        EntityIdentitiesRequest::ENDPOINT => {
             commands.spawn((
                 NetworkEndpointId {
                     inner: endpoint.id(),
                 },
                 NetworkMessage {
-                    inner: IdentitiesRequest::from(message),
+                    inner: EntityIdentitiesRequest::from(message),
                 },
             ));
             None
