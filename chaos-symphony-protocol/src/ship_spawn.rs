@@ -72,11 +72,11 @@ impl ShipSpawnRequest {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ShipSpawnRequestPayload {
-    /// Client Authority.
-    pub client_authority: Option<Identity>,
+    /// Client Identity.
+    pub client_identity: Option<Identity>,
 
-    /// Server Authority.
-    pub server_authority: Option<Identity>,
+    /// Server Identity.
+    pub server_identity: Option<Identity>,
 }
 
 /*

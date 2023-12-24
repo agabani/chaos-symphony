@@ -1,24 +1,19 @@
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
-use chaos_symphony_ecs::{
-    ship::Ship,
-    types::{ClientAuthority, Identity},
-};
+use chaos_symphony_ecs::{network::NetworkIdentity, ship::Ship, types::Identity};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     ShipSpawnRequest, ShipSpawnRequestPayload, ShipSpawnResponsePayload, ShipSpawning,
 };
-use tracing::instrument;
 
 pub struct ShipSpawnPlugin;
 
 impl Plugin for ShipSpawnPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (callback, request));
+        app.add_systems(Update, (callback, initiate));
     }
 }
 
-#[instrument(skip_all)]
 fn callback(mut commands: Commands, callbacks: Query<(Entity, &ShipSpawning)>) {
     callbacks.for_each(|(entity, callback)| {
         let span = error_span!("callback", message_id =% callback.id);
@@ -44,10 +39,9 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &ShipSpawning)>) {
     });
 }
 
-#[instrument(skip_all)]
-fn request(
+fn initiate(
     mut commands: Commands,
-    endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
+    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
     ships: Query<(), With<Ship>>,
     callbacks: Query<(), With<ShipSpawning>>,
 ) {
@@ -63,8 +57,8 @@ fn request(
             let Ok(callback) = ShipSpawnRequest::new(
                 id,
                 ShipSpawnRequestPayload {
-                    client_authority: None,
-                    server_authority: None,
+                    client_identity: None,
+                    server_identity: None,
                 },
             )
             .try_send(endpoint) else {

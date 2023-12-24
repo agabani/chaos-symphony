@@ -35,6 +35,7 @@ use identity::IdentityPlugin;
 use replicate::ReplicatePlugin;
 use server_authority::ServerAuthorityPlugin;
 use ship::ShipPlugin;
+use ship_spawn::ShipSpawnPlugin;
 use transformation::TransformationPlugin;
 
 #[tokio::main]
@@ -71,6 +72,7 @@ async fn main() {
         ReplicatePlugin,
         ServerAuthorityPlugin,
         ShipPlugin,
+        ShipSpawnPlugin,
         TransformationPlugin,
     ))
     .add_systems(Update, (accepted, route));
@@ -108,6 +110,15 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
+
+            if message.endpoint != PingEvent::ENDPOINT {
+                debug!(
+                    message_id = message.id,
+                    message_endpoint = message.endpoint,
+                    "routing",
+                );
+            }
+
             match message.endpoint.as_str() {
                 PingEvent::ENDPOINT => {
                     // do nothing

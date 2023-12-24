@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
+    network::{NetworkEndpointId, NetworkIdentity, NetworkMessage},
     ship::Ship,
     transform::Transformation,
     types::{ClientAuthority, Identity, ServerAuthority},
@@ -28,8 +28,7 @@ fn request(
         &NetworkEndpointId,
         &NetworkMessage<ReplicateRequest>,
     )>,
-    client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
+    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
     identities: Query<&Identity>,
 ) {
     messages.for_each(|(entity, endpoint_id, message)| {
@@ -40,9 +39,8 @@ fn request(
 
         let message = &message.inner;
 
-        let Some(endpoint) = server_endpoints
+        let Some(endpoint) = endpoints
             .iter()
-            .chain(client_endpoints.iter())
             .find(|endpoint| endpoint.id() == endpoint_id.inner)
         else {
             warn!("endpoint not found");

@@ -52,7 +52,8 @@ impl From<Identity> for chaos_symphony_protocol::Identity {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
 pub struct ClientAuthority {
-    identity: Identity,
+    /// Identity.
+    pub identity: Identity,
 }
 
 impl ClientAuthority {
@@ -80,7 +81,8 @@ pub struct EntityIdentity {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
 pub struct ServerAuthority {
-    identity: Identity,
+    /// Identity.
+    pub identity: Identity,
 }
 
 impl ServerAuthority {
