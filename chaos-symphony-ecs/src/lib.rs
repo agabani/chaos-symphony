@@ -3,6 +3,8 @@
 
 //! Chaos Symphony ECS
 
+/// Identities.
+pub mod identities;
 /// Network.
 pub mod network;
 /// Network Authenticate.
@@ -36,6 +38,8 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             network_disconnect::NetworkDisconnectPlugin,
             network_keep_alive::NetworkKeepAlivePlugin,
         ));
+
+        app.add_plugins(identities::IdentitiesPlugin);
 
         app.register_type::<bevy::utils::Uuid>()
             .register_type::<types::Identity>()

@@ -3,6 +3,7 @@
 
 //! Chaos Symphony Replication
 
+mod identities;
 mod network;
 mod network_authenticate;
 
@@ -14,6 +15,7 @@ use bevy::{
 };
 use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use identities::IdentitiesPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 
 #[tokio::main]
@@ -41,10 +43,11 @@ async fn main() {
             client: false,
             server: true,
         },
+        NetworkAuthenticatePlugin,
         NetworkDisconnectPlugin,
     ))
     // Default Plugins
-    .add_plugins(NetworkAuthenticatePlugin)
+    .add_plugins(IdentitiesPlugin)
     // ...
     .add_systems(Update, (accepted, route));
 
