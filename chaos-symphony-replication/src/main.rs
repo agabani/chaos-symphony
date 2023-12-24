@@ -12,9 +12,12 @@ use std::sync::mpsc::TryRecvError;
 use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
+    utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    network_authority::NetworkAuthorityPlugin, network_disconnect::NetworkDisconnectPlugin,
+    network_authority::NetworkAuthorityPlugin,
+    network_disconnect::NetworkDisconnectPlugin,
+    types::{EntityIdentity, Identity},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
@@ -52,7 +55,8 @@ async fn main() {
     // Default Plugins
     .add_plugins(EntityIdentitiesPlugin)
     // ...
-    .add_systems(Update, (accepted, route));
+    .add_systems(Update, (accepted, route))
+    .add_systems(Startup, testing);
 
     app.run();
 }
@@ -96,5 +100,14 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
                 }
             }
         }
+    });
+}
+
+fn testing(mut commands: Commands) {
+    commands.spawn(EntityIdentity {
+        inner: Identity {
+            id: Uuid::new_v4(),
+            noun: "test".to_string(),
+        },
     });
 }

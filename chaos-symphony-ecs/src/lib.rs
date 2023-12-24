@@ -5,6 +5,8 @@
 
 /// Entity Identities.
 pub mod entity_identities;
+/// Entity Identity.
+pub mod entity_identity;
 /// Network.
 pub mod network;
 /// Network Authenticate.
@@ -42,7 +44,10 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             network_keep_alive::NetworkKeepAlivePlugin,
         ));
 
-        app.add_plugins(entity_identities::EntityIdentitiesPlugin);
+        app.add_plugins((
+            entity_identities::EntityIdentitiesPlugin,
+            entity_identity::EntityIdentityPlugin,
+        ));
 
         app.register_type::<bevy::utils::Uuid>()
             .register_type::<types::Identity>()

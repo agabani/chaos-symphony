@@ -1,11 +1,12 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
-    types::NetworkIdentity,
+    types::{EntityIdentity, NetworkIdentity},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload, Response,
+    EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload,
+    EntityIdentityEvent, EntityIdentityEventPayload, Event, Response,
 };
 
 /// Entity Identities Plugin.
@@ -27,6 +28,7 @@ fn request(
         &NetworkMessage<EntityIdentitiesRequest>,
     )>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    identities: Query<&EntityIdentity>,
 ) {
     messages.for_each(|(entity, endpoint_id, request)| {
         let span = error_span!("request", message_id =% request.inner.id);
@@ -52,5 +54,18 @@ fn request(
         }
 
         info!("sent response");
+
+        identities.for_each(|identity| {
+            let request = EntityIdentityEvent::message(
+                Uuid::new_v4(),
+                EntityIdentityEventPayload {
+                    inner: identity.inner.clone().into(),
+                },
+            );
+
+            if request.try_send(endpoint).is_err() {
+                warn!("failed to send event");
+            }
+        });
     });
 }
