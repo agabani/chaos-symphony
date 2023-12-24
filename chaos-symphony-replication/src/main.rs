@@ -4,19 +4,17 @@
 //! Chaos Symphony Replication
 
 mod authenticate;
+mod network;
 
 use std::sync::mpsc::TryRecvError;
 
+use authenticate::AuthenticatePlugin;
 use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    network_disconnect::NetworkDisconnectPlugin,
-};
+use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::{AuthenticateRequest, Event as _, PingEvent, Request as _};
 
 #[tokio::main]
 async fn main() {
@@ -37,6 +35,7 @@ async fn main() {
             level: Level::DEBUG,
         },
     ))
+    // Default Plugins (Network)
     .add_plugins((
         NetworkPlugin {
             client: false,
@@ -44,7 +43,10 @@ async fn main() {
         },
         NetworkDisconnectPlugin,
     ))
-    .add_systems(Update, (accepted, route, authenticate::request));
+    // Default Plugins
+    .add_plugins(AuthenticatePlugin)
+    // ...
+    .add_systems(Update, (accepted, route));
 
     app.run();
 }
@@ -79,22 +81,11 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            match message.endpoint.as_str() {
-                PingEvent::ENDPOINT => {
-                    // do nothing
-                }
-                AuthenticateRequest::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: AuthenticateRequest::from(message),
-                        },
-                    ));
-                }
-                endpoint => {
-                    warn!(endpoint, "unhandled");
+            if let Some(message) = network::route(&mut commands, endpoint, message) {
+                match message.endpoint.as_str() {
+                    endpoint => {
+                        warn!(endpoint, "unhandled");
+                    }
                 }
             }
         }

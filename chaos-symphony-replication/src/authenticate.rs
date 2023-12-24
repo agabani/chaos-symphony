@@ -7,10 +7,17 @@ use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload, Response as _,
 };
-use tracing::instrument;
 
-#[instrument(skip_all)]
-pub fn request(
+/// Authenticate Plugin.
+pub struct AuthenticatePlugin;
+
+impl Plugin for AuthenticatePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, request);
+    }
+}
+
+fn request(
     mut commands: Commands,
     messages: Query<(
         Entity,
