@@ -3,7 +3,8 @@ use chaos_symphony_ecs::network::{NetworkEndpointId, NetworkMessage};
 use chaos_symphony_network::Message;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, EntityIdentitiesRequest, Event as _, PingEvent, Request as _,
+    AuthenticateRequest, EntityIdentitiesRequest, Event as _, PingEvent,
+    ReplicateEntityComponentsRequest, Request as _,
 };
 
 /// Route.
@@ -36,6 +37,17 @@ pub fn route(
             None
         }
         PingEvent::ENDPOINT => None,
+        ReplicateEntityComponentsRequest::ENDPOINT => {
+            commands.spawn((
+                NetworkEndpointId {
+                    inner: endpoint.id(),
+                },
+                NetworkMessage {
+                    inner: ReplicateEntityComponentsRequest::from(message),
+                },
+            ));
+            None
+        }
         _ => Some(message),
     }
 }
