@@ -10,79 +10,7 @@ use chaos_symphony_protocol::{
 };
 use tracing::instrument;
 
-#[instrument(skip_all)]
-pub fn callback(
-    mut commands: Commands,
-    callbacks: Query<(
-        Entity,
-        &ShipSpawning,
-        &ClientAuthority,
-        &ServerAuthority,
-        &NetworkEndpointId,
-    )>,
-    endpoints: Query<&NetworkEndpoint>,
-) {
-    callbacks.for_each(
-        |(entity, callback, client_authority, server_authority, endpoint_id)| {
-            let span = error_span!("callback", message_id =% callback.id);
-            let _guard = span.enter();
-
-            if let Poll::Ready(result) = callback.try_poll() {
-                commands.entity(entity).despawn();
-
-                let endpoint = endpoints
-                    .iter()
-                    .find(|endpoint| endpoint.id() == endpoint_id.inner);
-
-                let Ok(mut response) = result else {
-                    error!("failed to receive response from server");
-
-                    let Some(endpoint) = endpoint else {
-                        warn!("client endpoint not found");
-                        return;
-                    };
-
-                    let response =
-                        ShipSpawnResponse::new(callback.id, ShipSpawnResponsePayload::Failure);
-                    if response.try_send(endpoint).is_err() {
-                        warn!("failed to send response to client endpoint");
-                    }
-
-                    return;
-                };
-
-                let ShipSpawnResponsePayload::Success(success) = &mut response.payload else {
-                    warn!("server rejected request");
-
-                    let Some(endpoint) = endpoint else {
-                        warn!("client endpoint not found");
-                        return;
-                    };
-
-                    if response.try_send(endpoint).is_err() {
-                        warn!("failed to send response to client endpoint");
-                    }
-
-                    return;
-                };
-
-                info!(identity =? success.identity, "spawned");
-                let identity: Identity = success.identity.clone().into();
-
-                commands.spawn((identity, client_authority.clone(), server_authority.clone()));
-
-                let Some(endpoint) = endpoint else {
-                    warn!("client endpoint not found");
-                    return;
-                };
-
-                if response.try_send(endpoint).is_err() {
-                    warn!("failed to send response to client endpoint");
-                }
-            }
-        },
-    );
-}
+use crate::types::NetworkPath;
 
 #[instrument(skip_all)]
 pub fn request(
@@ -147,8 +75,13 @@ pub fn request(
 
         info!("sent request to server");
         commands.spawn((
-            NetworkEndpointId {
-                inner: client_endpoint.id(),
+            NetworkPath {
+                source: NetworkEndpointId {
+                    inner: client_endpoint.id(),
+                },
+                target: NetworkEndpointId {
+                    inner: server_endpoint.id(),
+                },
             },
             callback,
             client_authority.clone(),

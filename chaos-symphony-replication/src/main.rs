@@ -71,16 +71,7 @@ async fn main() {
         ShipPlugin,
         TransformationPlugin,
     ))
-    .add_systems(Update, (accepted, route, authenticate::request))
-    .add_systems(
-        Update,
-        (
-            // ship_spawn::broadcast,
-            ship_spawn::callback,
-            // ship_spawn::replicate,
-            ship_spawn::request,
-        ),
-    );
+    .add_systems(Update, (accepted, route, authenticate::request));
 
     app.run();
 }

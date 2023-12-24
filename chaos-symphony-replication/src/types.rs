@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
-use chaos_symphony_ecs::types::Identity;
+use chaos_symphony_ecs::{network::NetworkEndpointId, types::Identity};
 
 /// Replicate.
 #[derive(Debug, Clone, Component)]
@@ -20,4 +20,15 @@ impl<T> Replicate<T> {
             marker: PhantomData,
         }
     }
+}
+
+/// Network Path.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy, Component)]
+pub struct NetworkPath {
+    /// Source.
+    pub source: NetworkEndpointId,
+
+    /// Target.
+    pub target: NetworkEndpointId,
 }
