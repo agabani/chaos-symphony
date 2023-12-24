@@ -5,14 +5,14 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    IdentitiesRequest, IdentitiesResponse, IdentitiesResponsePayload, Response,
+    EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload, Response,
 };
 
-/// Identities Plugin.
+/// Entity Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct IdentitiesPlugin;
+pub struct EntityIdentitiesPlugin;
 
-impl Plugin for IdentitiesPlugin {
+impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, request);
     }
@@ -24,7 +24,7 @@ fn request(
     messages: Query<(
         Entity,
         &NetworkEndpointId,
-        &NetworkMessage<IdentitiesRequest>,
+        &NetworkMessage<EntityIdentitiesRequest>,
     )>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
 ) {
@@ -42,8 +42,10 @@ fn request(
             return;
         };
 
-        let response =
-            IdentitiesResponse::message(request.inner.id, IdentitiesResponsePayload::Success);
+        let response = EntityIdentitiesResponse::message(
+            request.inner.id,
+            EntityIdentitiesResponsePayload::Success,
+        );
 
         if response.try_send(endpoint).is_err() {
             warn!("failed to send response");

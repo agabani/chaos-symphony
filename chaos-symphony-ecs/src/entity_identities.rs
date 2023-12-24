@@ -2,27 +2,27 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    IdentitiesCallback, IdentitiesRequest, IdentitiesRequestPayload, IdentitiesResponsePayload,
-    Request as _,
+    EntityIdentitiesCallback, EntityIdentitiesRequest, EntityIdentitiesRequestPayload,
+    EntityIdentitiesResponsePayload, Request as _,
 };
 
 use crate::types::NetworkIdentity;
 
-/// Identities Plugin.
+/// Entity Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct IdentitiesPlugin;
+pub struct EntityIdentitiesPlugin;
 
-impl Plugin for IdentitiesPlugin {
+impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (callback, initiate));
     }
 }
 
 #[derive(Debug, Clone, Copy, Component, Reflect)]
-struct Identities;
+struct EntityIdentities;
 
 #[tracing::instrument(skip_all)]
-fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallback)>) {
+fn callback(mut commands: Commands, callbacks: Query<(Entity, &EntityIdentitiesCallback)>) {
     callbacks.for_each(|(entity, callback)| {
         let span = error_span!("callback", message_id =% callback.id);
         let _guard = span.enter();
@@ -30,7 +30,7 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallbac
         if let Poll::Ready(result) = callback.try_poll() {
             let mut commands = commands.entity(entity);
 
-            commands.remove::<IdentitiesCallback>();
+            commands.remove::<EntityIdentitiesCallback>();
 
             let Ok(response) = result else {
                 error!("failed to receive response from server");
@@ -38,12 +38,12 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallbac
             };
 
             match response.payload {
-                IdentitiesResponsePayload::Failure => {
+                EntityIdentitiesResponsePayload::Failure => {
                     error!("rejected by server");
                 }
-                IdentitiesResponsePayload::Success => {
+                EntityIdentitiesResponsePayload::Success => {
                     info!("accepted by server");
-                    commands.insert(Identities);
+                    commands.insert(EntityIdentities);
                 }
             };
         }
@@ -58,13 +58,14 @@ fn initiate(
         (Entity, &NetworkEndpoint),
         (
             With<NetworkIdentity>,
-            Without<Identities>,
-            Without<IdentitiesCallback>,
+            Without<EntityIdentities>,
+            Without<EntityIdentitiesCallback>,
         ),
     >,
 ) {
     endpoints.for_each(|(entity, endpoint)| {
-        let request = IdentitiesRequest::message(Uuid::new_v4(), IdentitiesRequestPayload {});
+        let request =
+            EntityIdentitiesRequest::message(Uuid::new_v4(), EntityIdentitiesRequestPayload {});
 
         let Ok(callback) = request.try_send(endpoint) else {
             error!("failed to send request");

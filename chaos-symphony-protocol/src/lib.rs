@@ -4,13 +4,13 @@
 //! Chaos Symphony Protocol
 
 mod authenticate;
-mod identities;
+mod entity_identities;
 mod message;
 mod ping;
 mod types;
 
 pub use authenticate::*;
-pub use identities::*;
+pub use entity_identities::*;
 pub use message::*;
 pub use ping::*;
 pub use types::*;
