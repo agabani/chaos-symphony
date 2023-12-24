@@ -16,6 +16,7 @@ mod types;
 
 use std::sync::mpsc::TryRecvError;
 
+use authenticate::AuthenticatePlugin;
 use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
@@ -63,6 +64,7 @@ async fn main() {
         NetworkDisconnectPlugin,
     ))
     .add_plugins((
+        AuthenticatePlugin,
         ClientAuthorityPlugin,
         IdentitiesPlugin,
         IdentityPlugin,
@@ -71,7 +73,7 @@ async fn main() {
         ShipPlugin,
         TransformationPlugin,
     ))
-    .add_systems(Update, (accepted, route, authenticate::request));
+    .add_systems(Update, (accepted, route));
 
     app.run();
 }

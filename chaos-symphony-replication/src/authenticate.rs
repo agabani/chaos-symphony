@@ -1,7 +1,7 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    types::{ClientAuthority, ServerAuthority},
+use chaos_symphony_ecs::network::{
+    NetworkClientAuthority, NetworkEndpointId, NetworkIdentity, NetworkMessage,
+    NetworkServerAuthority,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
@@ -9,8 +9,18 @@ use chaos_symphony_protocol::{
 };
 use tracing::instrument;
 
+/// Authenticate Plugin.
+#[allow(clippy::module_name_repetitions)]
+pub struct AuthenticatePlugin;
+
+impl Plugin for AuthenticatePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, request);
+    }
+}
+
 #[instrument(skip_all)]
-pub fn request(
+fn request(
     mut commands: Commands,
     messages: Query<(
         Entity,
@@ -33,26 +43,31 @@ pub fn request(
             return;
         };
 
-        let identity = &message.inner.payload.identity;
+        let message = &message.inner;
 
-        match identity.noun.as_str() {
+        let network_identity = NetworkIdentity {
+            inner: message.payload.identity.clone().into(),
+        };
+        info!(network_identity =? network_identity, "authenticated");
+
+        match network_identity.inner.noun() {
             "ai" | "client" => {
-                let authority = ClientAuthority::new(identity.clone().into());
-                info!(authority =? authority, "authenticated");
-                commands.entity(entity).insert(authority);
+                commands
+                    .entity(entity)
+                    .insert((network_identity, NetworkClientAuthority));
             }
             "simulation" => {
-                let authority = ServerAuthority::new(identity.clone().into());
-                info!(authority =? authority, "authenticated");
-                commands.entity(entity).insert(authority);
+                commands
+                    .entity(entity)
+                    .insert((network_identity, NetworkServerAuthority));
             }
             noun => todo!("{noun}"),
         };
 
         let response = AuthenticateResponse::new(
-            message.inner.id,
+            message.id,
             AuthenticateResponsePayload::Success {
-                identity: identity.clone(),
+                identity: message.payload.identity.clone(),
             },
         );
         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {
