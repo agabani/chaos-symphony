@@ -5,7 +5,7 @@ use chaos_symphony_protocol::{
     IdentitiesCallback, IdentitiesRequest, IdentitiesRequestPayload, IdentitiesResponsePayload,
 };
 
-use crate::types::{ClientAuthority, ServerAuthority};
+use crate::network::NetworkIdentity;
 
 /// Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -13,7 +13,7 @@ pub struct IdentitiesPlugin;
 
 impl Plugin for IdentitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (callback, request));
+        app.add_systems(Update, (callback, initiate));
     }
 }
 
@@ -42,13 +42,7 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &IdentitiesCallbac
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn request(
-    mut commands: Commands,
-    client_endpoints: Query<&NetworkEndpoint, Added<ClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, Added<ServerAuthority>>,
-) {
-    let endpoints = server_endpoints.iter().chain(client_endpoints.iter());
-
+fn initiate(mut commands: Commands, endpoints: Query<&NetworkEndpoint, Added<NetworkIdentity>>) {
     endpoints.for_each(|endpoint| {
         let span = error_span!("request", endpoint_id = endpoint.id());
         let _guard = span.enter();

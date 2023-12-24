@@ -7,7 +7,7 @@ use chaos_symphony_protocol::{
 };
 
 use crate::{
-    network::{NetworkEndpointId, NetworkMessage},
+    network::{NetworkEndpointId, NetworkIdentity, NetworkMessage},
     ship::Ship,
     transform::Transformation,
     types::{ClientAuthority, Identity, Replicate, ServerAuthority},
@@ -54,13 +54,10 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &ReplicateCallback
 #[allow(clippy::needless_pass_by_value)]
 fn initiate(
     mut commands: Commands,
-    client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
+    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
     identities: Query<(Entity, &Identity), Added<Identity>>,
 ) {
-    let mut endpoints = server_endpoints.iter().chain(client_endpoints.iter());
-
-    if let Some(endpoint) = endpoints.next() {
+    if let Some(endpoint) = endpoints.iter().next() {
         let span = error_span!("request", endpoint_id = endpoint.id());
         let _guard = span.enter();
 
