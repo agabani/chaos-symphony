@@ -5,7 +5,8 @@ use bevy::{
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, AuthenticateRequestPayload, AuthenticateResponsePayload, Authenticating,
+    AuthenticateCallback, AuthenticateRequest, AuthenticateRequestPayload,
+    AuthenticateResponsePayload,
 };
 
 use crate::types::{ClientAuthority, Identity, ServerAuthority};
@@ -70,7 +71,7 @@ fn authenticate(
 /// - On success, inserts authority.
 #[allow(clippy::needless_pass_by_value)]
 #[instrument(skip_all)]
-fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticating)>) {
+fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &AuthenticateCallback)>) {
     callbacks.for_each(|(entity, callback)| {
         let span = error_span!("authenticating", message_id =% callback.id());
         let _guard = span.enter();
@@ -78,7 +79,7 @@ fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticat
         if let Poll::Ready(result) = callback.try_poll() {
             let response = match result {
                 Ok(result) => {
-                    commands.entity(entity).remove::<Authenticating>();
+                    commands.entity(entity).remove::<AuthenticateCallback>();
                     result
                 }
                 Err(error) => {

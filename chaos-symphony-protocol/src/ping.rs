@@ -5,6 +5,12 @@ use tokio::sync::mpsc::error::SendError;
 
 use crate::Message;
 
+/*
+ * ============================================================================
+ * Event
+ * ============================================================================
+ */
+
 /// Ping Event.
 #[allow(clippy::module_name_repetitions)]
 pub type PingEvent = Message<PingEventPayload>;

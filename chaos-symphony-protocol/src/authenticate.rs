@@ -6,6 +6,40 @@ use tokio::sync::mpsc::error::SendError;
 
 use crate::{Identity, Message};
 
+/*
+ * ============================================================================
+ * Callback
+ * ============================================================================
+ */
+
+/// Authenticate Callback.
+#[derive(Debug, Component)]
+pub struct AuthenticateCallback {
+    /// Id.
+    pub id: Uuid,
+
+    future: Future<chaos_symphony_network::Message>,
+}
+
+impl AuthenticateCallback {
+    /// Id.
+    #[must_use]
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    /// Try poll.
+    pub fn try_poll(&self) -> Poll<Result<AuthenticateResponse, PollError>> {
+        self.future.try_poll().map(|result| result.map(Into::into))
+    }
+}
+
+/*
+ * ============================================================================
+ * Request
+ * ============================================================================
+ */
+
 /// Authenticate Request.
 #[allow(clippy::module_name_repetitions)]
 pub type AuthenticateRequest = Message<AuthenticateRequestPayload>;
@@ -32,11 +66,11 @@ impl AuthenticateRequest {
     pub fn try_send(
         self,
         endpoint: &NetworkEndpoint,
-    ) -> Result<Authenticating, SendError<NetworkSend>> {
+    ) -> Result<AuthenticateCallback, SendError<NetworkSend>> {
         let id = self.id;
         endpoint
             .try_send_blocking(self.into())
-            .map(|future| Authenticating { id, future })
+            .map(|future| AuthenticateCallback { id, future })
     }
 }
 
@@ -47,6 +81,12 @@ pub struct AuthenticateRequestPayload {
     /// Identity.
     pub identity: Identity,
 }
+
+/*
+ * ============================================================================
+ * Response
+ * ============================================================================
+ */
 
 /// Authenticate Response.
 #[allow(clippy::module_name_repetitions)]
@@ -88,26 +128,4 @@ pub enum AuthenticateResponsePayload {
         /// Identity.
         identity: Identity,
     },
-}
-
-/// Authenticating.
-#[derive(Debug, Component)]
-pub struct Authenticating {
-    /// Id.
-    pub id: Uuid,
-
-    future: Future<chaos_symphony_network::Message>,
-}
-
-impl Authenticating {
-    /// Id.
-    #[must_use]
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
-
-    /// Try poll.
-    pub fn try_poll(&self) -> Poll<Result<AuthenticateResponse, PollError>> {
-        self.future.try_poll().map(|result| result.map(Into::into))
-    }
 }
