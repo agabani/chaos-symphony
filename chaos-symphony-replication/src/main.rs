@@ -3,18 +3,18 @@
 
 //! Chaos Symphony Replication
 
-mod authenticate;
 mod network;
+mod network_authenticate;
 
 use std::sync::mpsc::TryRecvError;
 
-use authenticate::AuthenticatePlugin;
 use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
 use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use network_authenticate::NetworkAuthenticatePlugin;
 
 #[tokio::main]
 async fn main() {
@@ -44,7 +44,7 @@ async fn main() {
         NetworkDisconnectPlugin,
     ))
     // Default Plugins
-    .add_plugins(AuthenticatePlugin)
+    .add_plugins(NetworkAuthenticatePlugin)
     // ...
     .add_systems(Update, (accepted, route));
 

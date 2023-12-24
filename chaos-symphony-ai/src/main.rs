@@ -10,7 +10,10 @@ use bevy::{
     prelude::*,
     utils::Uuid,
 };
-use chaos_symphony_ecs::{network, types::Identity};
+use chaos_symphony_ecs::{
+    network,
+    types::{Identity, NetworkIdentity},
+};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 
 #[tokio::main]
@@ -33,10 +36,12 @@ async fn main() {
         },
     ))
     .add_plugins(chaos_symphony_ecs::DefaultPlugins {
-        identity: Identity::new(
-            "ai".to_string(),
-            Uuid::from_str("d908808f-073d-4c57-9c08-bf91ba2b1bce").unwrap(),
-        ),
+        identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("d908808f-073d-4c57-9c08-bf91ba2b1bce").unwrap(),
+                noun: "ai".to_string(),
+            },
+        },
     })
     .add_systems(Update, route);
 

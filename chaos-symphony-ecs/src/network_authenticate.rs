@@ -9,29 +9,20 @@ use chaos_symphony_protocol::{
     AuthenticateResponsePayload, Request as _,
 };
 
-use crate::types::{ClientAuthority, Identity, ServerAuthority};
+use crate::types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority};
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
 pub struct NetworkAuthenticatePlugin {
     /// Identity.
-    pub identity: Identity,
+    pub identity: NetworkIdentity,
 }
 
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(NetworkIdentity {
-            inner: self.identity.clone(),
-        })
-        .add_systems(Update, (authenticate, authenticating));
+        app.insert_resource(self.identity.clone())
+            .add_systems(Update, (authenticate, authenticating));
     }
-}
-
-/// Identity.
-#[derive(Resource)]
-struct NetworkIdentity {
-    /// Inner.
-    inner: Identity,
 }
 
 /// Authenticate.
@@ -77,14 +68,16 @@ fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticat
         let _guard = span.enter();
 
         if let Poll::Ready(result) = callback.try_poll() {
+            let mut commands = commands.entity(entity);
+
             let response = match result {
                 Ok(result) => {
-                    commands.entity(entity).remove::<AuthenticateCallback>();
+                    commands.remove::<AuthenticateCallback>();
                     result
                 }
                 Err(error) => {
                     error!(error =? error, "failed to authenticate");
-                    commands.entity(entity).despawn();
+                    commands.despawn();
                     return;
                 }
             };
@@ -94,23 +87,25 @@ fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticat
 
             let AuthenticateResponsePayload::Success { identity } = response.payload else {
                 error!("failed to authenticate");
-                commands.entity(entity).despawn();
+                commands.despawn();
                 return;
             };
 
             match identity.noun.as_str() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands.insert(NetworkClientAuthority);
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands.insert(NetworkServerAuthority);
                 }
                 identity => todo!("{identity}"),
             };
+
+            let network_identity = NetworkIdentity {
+                inner: identity.into(),
+            };
+            info!(network_identity =? network_identity, "authenticated");
+            commands.insert(network_identity);
         }
     });
 }

@@ -4,32 +4,20 @@ use bevy::{
     utils::Uuid,
 };
 
+/*
+ * ============================================================================
+ * Identity
+ * ============================================================================
+ */
+
 /// Identity.
 #[derive(Debug, Clone, PartialEq, Eq, Reflect)]
 pub struct Identity {
-    id: Uuid,
-
-    noun: String,
-}
-
-impl Identity {
-    /// Creates a new [`Identity`].
-    #[must_use]
-    pub fn new(noun: String, id: Uuid) -> Self {
-        Self { id, noun }
-    }
-
     /// Id.
-    #[must_use]
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
+    pub id: Uuid,
 
     /// Noun.
-    #[must_use]
-    pub fn noun(&self) -> &str {
-        &self.noun
-    }
+    pub noun: String,
 }
 
 impl From<chaos_symphony_protocol::Identity> for Identity {
@@ -50,8 +38,66 @@ impl From<Identity> for chaos_symphony_protocol::Identity {
     }
 }
 
+/*
+ * ============================================================================
+ * Entity
+ * ============================================================================
+ */
+
+/// Entity Identity.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct EntityIdentity {
+    /// Inner.
+    pub inner: Identity,
+}
+
+/// Entity Client Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct EntityClientAuthority {
+    /// Identity.
+    pub identity: Identity,
+}
+
+/// Entity Server Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct EntityServerAuthority {
+    /// Identity.
+    pub identity: Identity,
+}
+
+/*
+ * ============================================================================
+ * Network
+ * ============================================================================
+ */
+
+/// Network Identity.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Resource, Reflect)]
+pub struct NetworkIdentity {
+    /// Inner.
+    pub inner: Identity,
+}
+
+/// Network Client Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
+pub struct NetworkClientAuthority;
+
+/// Network Server Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
+pub struct NetworkServerAuthority;
+
+/*
+ * ============================================================================
+ * Transformation
+ * ============================================================================
+ */
+
 /// Transformation.
-#[derive(Clone, Copy, Component, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Component, Reflect)]
 pub struct Transformation {
     /// Orientation.
     pub orientation: DQuat,
@@ -75,47 +121,5 @@ impl From<Transformation> for chaos_symphony_protocol::Transformation {
             orientation: value.orientation.into(),
             position: value.position.into(),
         }
-    }
-}
-
-/// Client Authority.
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Component, Reflect)]
-pub struct ClientAuthority {
-    identity: Identity,
-}
-
-impl ClientAuthority {
-    /// Creates a new [`ClientAuthority`].
-    #[must_use]
-    pub fn new(identity: Identity) -> Self {
-        Self { identity }
-    }
-
-    /// Identity.
-    #[must_use]
-    pub fn identity(&self) -> &Identity {
-        &self.identity
-    }
-}
-
-/// Server Authority.
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Component, Reflect)]
-pub struct ServerAuthority {
-    identity: Identity,
-}
-
-impl ServerAuthority {
-    /// Creates a new [`ServerAuthority`].
-    #[must_use]
-    pub fn new(identity: Identity) -> Self {
-        Self { identity }
-    }
-
-    /// Identity.
-    #[must_use]
-    pub fn identity(&self) -> &Identity {
-        &self.identity
     }
 }

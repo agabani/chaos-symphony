@@ -19,7 +19,7 @@ pub mod types;
 /// Default Plugins.
 pub struct DefaultPlugins {
     /// Identity.
-    pub identity: types::Identity,
+    pub identity: types::NetworkIdentity,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
@@ -37,10 +37,14 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             network_keep_alive::NetworkKeepAlivePlugin,
         ));
 
-        app.register_type::<types::ClientAuthority>()
-            .register_type::<types::ServerAuthority>()
+        app.register_type::<bevy::utils::Uuid>()
             .register_type::<types::Identity>()
-            .register_type::<types::Transformation>()
-            .register_type::<bevy::utils::Uuid>();
+            .register_type::<types::EntityIdentity>()
+            .register_type::<types::EntityClientAuthority>()
+            .register_type::<types::EntityServerAuthority>()
+            .register_type::<types::NetworkIdentity>()
+            .register_type::<types::NetworkClientAuthority>()
+            .register_type::<types::NetworkServerAuthority>()
+            .register_type::<types::Transformation>();
     }
 }

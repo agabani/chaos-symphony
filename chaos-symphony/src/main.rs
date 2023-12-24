@@ -12,7 +12,10 @@ use bevy::{
     prelude::*,
     utils::Uuid,
 };
-use chaos_symphony_ecs::{network, types::Identity};
+use chaos_symphony_ecs::{
+    network,
+    types::{Identity, NetworkIdentity},
+};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 
 #[tokio::main]
@@ -35,10 +38,12 @@ async fn main() {
     )
     .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
     .add_plugins(chaos_symphony_ecs::DefaultPlugins {
-        identity: Identity::new(
-            "client".to_string(),
-            Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
-        ),
+        identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
+                noun: "client".to_string(),
+            },
+        },
     })
     .add_plugins(transformation::TransformationPlugin)
     .add_systems(Startup, camera)
