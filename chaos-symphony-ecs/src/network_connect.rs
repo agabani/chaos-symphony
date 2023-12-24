@@ -8,15 +8,15 @@ pub struct NetworkConnectPlugin;
 
 impl Plugin for NetworkConnectPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (connect, connecting));
+        app.add_systems(Update, (callback, initiate));
     }
 }
 
-/// Connect.
+/// Initiate.
 ///
 /// Initiates connections when connection pool drops below 1.
 #[allow(clippy::needless_pass_by_value)]
-fn connect(
+fn initiate(
     mut commands: Commands,
     client: Res<NetworkClient>,
     callbacks: Query<(), With<Connecting>>,
@@ -32,14 +32,14 @@ fn connect(
     }
 }
 
-/// Connecting.
+/// Callback.
 ///
 /// Manages [`Connecting`] lifetime.
 ///
 /// - On success, spawns [`NetworkEndpoint`].
 /// - On ready, despawns [`Connecting`].
 #[allow(clippy::needless_pass_by_value)]
-fn connecting(mut commands: Commands, callbacks: Query<(Entity, &Connecting)>) {
+fn callback(mut commands: Commands, callbacks: Query<(Entity, &Connecting)>) {
     callbacks.for_each(|(entity, callback)| {
         if let Poll::Ready(result) = callback.try_poll() {
             commands.entity(entity).despawn();

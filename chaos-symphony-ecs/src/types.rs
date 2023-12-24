@@ -69,6 +69,13 @@ impl ClientAuthority {
     }
 }
 
+/// Entity Identity.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Component, Reflect)]
+pub struct EntityIdentity {
+    inner: Identity,
+}
+
 /// Server Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]

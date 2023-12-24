@@ -8,7 +8,10 @@ use chaos_symphony_protocol::{
     AuthenticateRequest, AuthenticateRequestPayload, AuthenticateResponsePayload, Authenticating,
 };
 
-use crate::types::{ClientAuthority, Identity, ServerAuthority};
+use crate::{
+    network::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority},
+    types::Identity,
+};
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -24,13 +27,6 @@ impl Plugin for NetworkAuthenticatePlugin {
         })
         .add_systems(Update, (authenticate, authenticating));
     }
-}
-
-/// Identity.
-#[derive(Resource)]
-struct NetworkIdentity {
-    /// Inner.
-    inner: Identity,
 }
 
 /// Authenticate.
@@ -97,16 +93,21 @@ fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticat
                 return;
             };
 
-            match identity.noun.as_str() {
+            let network_identity = NetworkIdentity {
+                inner: identity.into(),
+            };
+            info!(network_identity =? network_identity, "authenticated");
+
+            match network_identity.inner.noun() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands
+                        .entity(entity)
+                        .insert((network_identity, NetworkClientAuthority));
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands
+                        .entity(entity)
+                        .insert((network_identity, NetworkServerAuthority));
                 }
                 identity => todo!("{identity}"),
             };

@@ -57,6 +57,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             client_authority::ClientAuthorityPlugin,
             identities::IdentitiesPlugin,
             identity::IdentitiesPlugin,
+            network::NetworkPlugin,
             replicate::ReplicatePlugin,
             server_authority::ServerAuthorityPlugin,
             ship::ShipPlugin,
