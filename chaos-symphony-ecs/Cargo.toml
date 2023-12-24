@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bevy = "^0.12"
 chaos-symphony-async = { version = "^0.1", path = "../chaos-symphony-async" }
+chaos-symphony-network = { version = "^0.1", path = "../chaos-symphony-network" }
 chaos-symphony-network-bevy = { version = "^0.1", path = "../chaos-symphony-network-bevy" }
 chaos-symphony-protocol = { version = "^0.1", path = "../chaos-symphony-protocol" }
 tracing = "^0.1"
