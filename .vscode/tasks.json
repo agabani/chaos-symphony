@@ -19,7 +19,8 @@
       "command": "just run-ai",
       "presentation": {
         "group": "run"
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "just: run-client",
@@ -27,7 +28,8 @@
       "command": "just run-client",
       "presentation": {
         "group": "run"
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "just: run-replication",
@@ -35,7 +37,8 @@
       "command": "just run-replication",
       "presentation": {
         "group": "run"
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "just: run-simulation",
@@ -43,7 +46,8 @@
       "command": "just run-simulation",
       "presentation": {
         "group": "run"
-      }
+      },
+      "problemMatcher": []
     }
   ]
 }
