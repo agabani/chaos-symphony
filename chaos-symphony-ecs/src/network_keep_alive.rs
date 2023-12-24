@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::PingEvent;
+use chaos_symphony_protocol::{Event as _, PingEvent, PingEventPayload};
 
 /// Network Keep Alive Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -39,7 +39,7 @@ fn keep_alive(
 ) {
     if timer.inner.tick(time.delta()).just_finished() {
         query.for_each(|(entity, endpoint)| {
-            let message = PingEvent::new(Uuid::new_v4());
+            let message = PingEvent::message(Uuid::new_v4(), PingEventPayload);
             if message.try_send(endpoint).is_err() {
                 let span = warn_span!(
                     "keep_alive",

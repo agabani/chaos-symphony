@@ -3,7 +3,6 @@
 
 //! Chaos Symphony
 
-mod ship;
 mod transformation;
 
 use std::str::FromStr as _;
@@ -13,23 +12,11 @@ use bevy::{
     prelude::*,
     utils::Uuid,
 };
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
-    network::{NetworkEndpointId, NetworkMessage},
-    network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin,
-    network_keep_alive::NetworkKeepAlivePlugin,
-    ship_spawn::ShipSpawnPlugin,
-    transform::Transformation,
+    network,
+    types::{Identity, NetworkIdentity},
 };
-use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::ShipSpawnEvent;
-use ship::ShipPlugin;
-
-use crate::transformation::TransformationPlugin;
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 
 #[tokio::main]
 async fn main() {
@@ -49,33 +36,18 @@ async fn main() {
             level: Level::DEBUG,
         }),
     )
-    .add_plugins(WorldInspectorPlugin::new())
-    .add_plugins((
-        NetworkPlugin {
-            client: true,
-            server: false,
+    .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
+    .add_plugins(chaos_symphony_ecs::DefaultPlugins {
+        identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
+                noun: "client".to_string(),
+            },
         },
-        NetworkAuthenticatePlugin {
-            identity: Identity::new(
-                "client".to_string(),
-                Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
-            ),
-        },
-        NetworkConnectPlugin,
-        NetworkDisconnectPlugin,
-        NetworkKeepAlivePlugin,
-    ))
-    .add_plugins(ShipPlugin)
-    .add_plugins(ShipSpawnPlugin)
-    .add_plugins(TransformationPlugin)
+    })
+    .add_plugins(transformation::TransformationPlugin)
     .add_systems(Startup, camera)
     .add_systems(Update, route);
-
-    app.register_type::<ClientAuthority>()
-        .register_type::<ServerAuthority>()
-        .register_type::<Identity>()
-        .register_type::<Transformation>()
-        .register_type::<Uuid>();
 
     app.run();
 }
@@ -84,24 +56,17 @@ fn camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
+#[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            match message.endpoint.as_str() {
-                ShipSpawnEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnEvent::from(message),
-                        },
-                    ));
-                }
-                endpoint => {
-                    warn!(endpoint, "unhandled");
+            if let Some(message) = network::route(&mut commands, endpoint, message) {
+                match message.endpoint.as_str() {
+                    endpoint => {
+                        warn!(endpoint, "unhandled");
+                    }
                 }
             }
         }

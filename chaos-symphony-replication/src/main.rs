@@ -3,8 +3,8 @@
 
 //! Chaos Symphony Replication
 
-mod authenticate;
-mod ship_spawn;
+mod network;
+mod network_authenticate;
 
 use std::sync::mpsc::TryRecvError;
 
@@ -12,12 +12,9 @@ use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    network_disconnect::NetworkDisconnectPlugin,
-};
+use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::{AuthenticateRequest, PingEvent, ShipSpawnRequest};
+use network_authenticate::NetworkAuthenticatePlugin;
 
 #[tokio::main]
 async fn main() {
@@ -38,6 +35,7 @@ async fn main() {
             level: Level::DEBUG,
         },
     ))
+    // Default Plugins (Network)
     .add_plugins((
         NetworkPlugin {
             client: false,
@@ -45,16 +43,10 @@ async fn main() {
         },
         NetworkDisconnectPlugin,
     ))
-    .add_systems(Update, (accepted, route, authenticate::request))
-    .add_systems(
-        Update,
-        (
-            ship_spawn::broadcast,
-            ship_spawn::callback,
-            ship_spawn::replicate,
-            ship_spawn::request,
-        ),
-    );
+    // Default Plugins
+    .add_plugins(NetworkAuthenticatePlugin)
+    // ...
+    .add_systems(Update, (accepted, route));
 
     app.run();
 }
@@ -84,37 +76,17 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
     }
 }
 
+#[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            match message.endpoint.as_str() {
-                PingEvent::ENDPOINT => {
-                    // do nothing
-                }
-                AuthenticateRequest::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: AuthenticateRequest::from(message),
-                        },
-                    ));
-                }
-                ShipSpawnRequest::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnRequest::from(message),
-                        },
-                    ));
-                }
-                endpoint => {
-                    warn!(endpoint, "unhandled");
+            if let Some(message) = network::route(&mut commands, endpoint, message) {
+                match message.endpoint.as_str() {
+                    endpoint => {
+                        warn!(endpoint, "unhandled");
+                    }
                 }
             }
         }

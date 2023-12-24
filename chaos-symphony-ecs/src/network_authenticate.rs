@@ -5,35 +5,24 @@ use bevy::{
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, AuthenticateRequestPayload, AuthenticateResponsePayload, Authenticating,
+    AuthenticateCallback, AuthenticateRequest, AuthenticateRequestPayload,
+    AuthenticateResponsePayload, Request as _,
 };
 
-use crate::{
-    authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
-};
+use crate::types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority};
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
 pub struct NetworkAuthenticatePlugin {
     /// Identity.
-    pub identity: Identity,
+    pub identity: NetworkIdentity,
 }
 
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(NetworkIdentity {
-            inner: self.identity.clone(),
-        })
-        .add_systems(Update, (authenticate, authenticating));
+        app.insert_resource(self.identity.clone())
+            .add_systems(Update, (authenticate, authenticating));
     }
-}
-
-/// Identity.
-#[derive(Resource)]
-struct NetworkIdentity {
-    /// Inner.
-    inner: Identity,
 }
 
 /// Authenticate.
@@ -46,7 +35,7 @@ fn authenticate(
     endpoints: Query<(Entity, &NetworkEndpoint), Added<NetworkEndpoint>>,
 ) {
     endpoints.for_each(|(entity, endpoint)| {
-        let request = AuthenticateRequest::new(
+        let request = AuthenticateRequest::message(
             Uuid::new_v4(),
             AuthenticateRequestPayload {
                 identity: identity.inner.clone().into(),
@@ -73,20 +62,22 @@ fn authenticate(
 /// - On success, inserts authority.
 #[allow(clippy::needless_pass_by_value)]
 #[instrument(skip_all)]
-fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticating)>) {
+fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &AuthenticateCallback)>) {
     callbacks.for_each(|(entity, callback)| {
         let span = error_span!("authenticating", message_id =% callback.id());
         let _guard = span.enter();
 
         if let Poll::Ready(result) = callback.try_poll() {
+            let mut commands = commands.entity(entity);
+
             let response = match result {
                 Ok(result) => {
-                    commands.entity(entity).remove::<Authenticating>();
+                    commands.remove::<AuthenticateCallback>();
                     result
                 }
                 Err(error) => {
                     error!(error =? error, "failed to authenticate");
-                    commands.entity(entity).despawn();
+                    commands.despawn();
                     return;
                 }
             };
@@ -96,23 +87,25 @@ fn authenticating(mut commands: Commands, callbacks: Query<(Entity, &Authenticat
 
             let AuthenticateResponsePayload::Success { identity } = response.payload else {
                 error!("failed to authenticate");
-                commands.entity(entity).despawn();
+                commands.despawn();
                 return;
             };
 
             match identity.noun.as_str() {
                 "ai" | "client" => {
-                    let authority = ClientAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands.insert(NetworkClientAuthority);
                 }
                 "simulation" => {
-                    let authority = ServerAuthority::new(identity.into());
-                    info!(authority =? authority, "authenticated");
-                    commands.entity(entity).insert(authority);
+                    commands.insert(NetworkServerAuthority);
                 }
                 identity => todo!("{identity}"),
             };
+
+            let network_identity = NetworkIdentity {
+                inner: identity.into(),
+            };
+            info!(network_identity =? network_identity, "authenticated");
+            commands.insert(network_identity);
         }
     });
 }

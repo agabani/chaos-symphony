@@ -1,16 +1,25 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
     network::{NetworkEndpointId, NetworkMessage},
+    types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
-    AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload,
+    AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload, Response as _,
 };
-use tracing::instrument;
 
-#[instrument(skip_all)]
-pub fn request(
+/// Network Authenticate Plugin.
+#[allow(clippy::module_name_repetitions)]
+pub struct NetworkAuthenticatePlugin;
+
+impl Plugin for NetworkAuthenticatePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, request);
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn request(
     mut commands: Commands,
     messages: Query<(
         Entity,
@@ -33,23 +42,27 @@ pub fn request(
             return;
         };
 
+        let mut commands = commands.entity(entity);
+
         let identity = &message.inner.payload.identity;
 
         match identity.noun.as_str() {
             "ai" | "client" => {
-                let authority = ClientAuthority::new(identity.clone().into());
-                info!(authority =? authority, "authenticated");
-                commands.entity(entity).insert(authority);
+                commands.insert(NetworkClientAuthority);
             }
             "simulation" => {
-                let authority = ServerAuthority::new(identity.clone().into());
-                info!(authority =? authority, "authenticated");
-                commands.entity(entity).insert(authority);
+                commands.insert(NetworkServerAuthority);
             }
             noun => todo!("{noun}"),
         };
 
-        let response = AuthenticateResponse::new(
+        let network_identity = NetworkIdentity {
+            inner: identity.clone().into(),
+        };
+        info!(network_identity =? network_identity, "authenticated");
+        commands.insert(network_identity);
+
+        let response = AuthenticateResponse::message(
             message.inner.id,
             AuthenticateResponsePayload::Success {
                 identity: identity.clone(),

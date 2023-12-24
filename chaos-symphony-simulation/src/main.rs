@@ -3,8 +3,6 @@
 
 //! Chaos Symphony Simulation
 
-mod ship_spawn;
-
 use std::str::FromStr as _;
 
 use bevy::{
@@ -13,16 +11,10 @@ use bevy::{
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    identity::Identity,
-    network::{NetworkEndpointId, NetworkMessage},
-    network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin,
-    network_keep_alive::NetworkKeepAlivePlugin,
-    ship_spawn::ShipSpawnPlugin,
+    network,
+    types::{Identity, NetworkIdentity},
 };
-use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest};
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 
 #[tokio::main]
 async fn main() {
@@ -43,56 +35,30 @@ async fn main() {
             level: Level::DEBUG,
         },
     ))
-    .add_plugins((
-        NetworkPlugin {
-            client: true,
-            server: false,
+    .add_plugins(chaos_symphony_ecs::DefaultPlugins {
+        identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                noun: "simulation".to_string(),
+            },
         },
-        NetworkAuthenticatePlugin {
-            identity: Identity::new(
-                "simulation".to_string(),
-                Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-            ),
-        },
-        NetworkConnectPlugin,
-        NetworkDisconnectPlugin,
-        NetworkKeepAlivePlugin,
-    ))
-    .add_plugins(ShipSpawnPlugin)
-    .add_systems(Update, route)
-    .add_systems(Update, ship_spawn::request);
+    })
+    .add_systems(Update, route);
 
     app.run();
 }
 
+#[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            match message.endpoint.as_str() {
-                ShipSpawnEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnEvent::from(message),
-                        },
-                    ));
-                }
-                ShipSpawnRequest::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnRequest::from(message),
-                        },
-                    ));
-                }
-                endpoint => {
-                    warn!(endpoint, "unhandled");
+            if let Some(message) = network::route(&mut commands, endpoint, message) {
+                match message.endpoint.as_str() {
+                    endpoint => {
+                        warn!(endpoint, "unhandled");
+                    }
                 }
             }
         }

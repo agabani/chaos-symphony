@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::transform::Transformation;
+use chaos_symphony_ecs::types::Transformation;
 
 /// Transformation Plugin.
 #[allow(clippy::module_name_repetitions)]
