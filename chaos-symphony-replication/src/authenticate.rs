@@ -9,6 +9,7 @@ use chaos_symphony_protocol::{
 };
 
 /// Authenticate Plugin.
+#[allow(clippy::module_name_repetitions)]
 pub struct AuthenticatePlugin;
 
 impl Plugin for AuthenticatePlugin {
@@ -17,6 +18,7 @@ impl Plugin for AuthenticatePlugin {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn request(
     mut commands: Commands,
     messages: Query<(

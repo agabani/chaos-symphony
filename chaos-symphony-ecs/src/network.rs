@@ -18,6 +18,7 @@ pub struct NetworkMessage<T> {
 }
 
 /// Route.
+#[allow(clippy::match_single_binding)]
 pub fn route(
     _commands: &mut Commands,
     _endpoint: &NetworkEndpoint,

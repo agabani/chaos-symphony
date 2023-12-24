@@ -43,6 +43,7 @@ async fn main() {
     app.run();
 }
 
+#[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
 fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     endpoints.for_each(|endpoint| {

@@ -5,7 +5,7 @@ use bevy::{
 };
 
 /// Identity.
-#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+#[derive(Debug, Clone, PartialEq, Eq, Reflect)]
 pub struct Identity {
     id: Uuid,
 
