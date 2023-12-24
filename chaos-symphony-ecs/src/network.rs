@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{EntityIdentityEvent, Event as _};
+use chaos_symphony_protocol::{EntityIdentityEvent, Event as _, TransformationEvent};
 
 /// Network Endpoint Id.
 #[allow(clippy::module_name_repetitions)]
@@ -32,6 +32,17 @@ pub fn route(
                 },
                 NetworkMessage {
                     inner: EntityIdentityEvent::from(message),
+                },
+            ));
+            None
+        }
+        TransformationEvent::ENDPOINT => {
+            commands.spawn((
+                NetworkEndpointId {
+                    inner: endpoint.id(),
+                },
+                NetworkMessage {
+                    inner: TransformationEvent::from(message),
                 },
             ));
             None

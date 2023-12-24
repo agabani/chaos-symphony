@@ -1,8 +1,10 @@
+use std::marker::PhantomData;
+
 use bevy::prelude::*;
 
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
-    types::{EntityIdentity, NetworkIdentity},
+    types::{EntityIdentity, NetworkIdentity, ReplicateEntity, Transformation},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
@@ -37,7 +39,7 @@ fn request(
 
         commands.entity(entity).despawn();
 
-        let Some((endpoint, _identity)) = endpoints
+        let Some((endpoint, network_identity)) = endpoints
             .iter()
             .find(|(endpoint, _)| endpoint.id() == endpoint_id.inner)
         else {
@@ -69,5 +71,14 @@ fn request(
         if response.try_send(endpoint).is_err() {
             warn!("failed to send response");
         }
+
+        // Spawn tasks for everything that should be replicated.
+        commands.spawn((
+            network_identity.clone(),
+            ReplicateEntity {
+                identity: entity_identity,
+                marker: PhantomData::<Transformation>,
+            },
+        ));
     });
 }

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use chaos_symphony_network_bevy::NetworkEndpoint;
 
 use crate::types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority};
 
@@ -12,10 +13,10 @@ impl Plugin for NetworkAuthorityPlugin {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value, clippy::type_complexity)]
 fn label(
     mut commands: Commands,
-    endpoints: Query<(Entity, &NetworkIdentity), Added<NetworkIdentity>>,
+    endpoints: Query<(Entity, &NetworkIdentity), (With<NetworkEndpoint>, Added<NetworkIdentity>)>,
 ) {
     endpoints.for_each(|(entity, identity)| match identity.inner.noun.as_str() {
         "ai" | "client" => {

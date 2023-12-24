@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::{
     math::{DQuat, DVec3},
     prelude::*,
@@ -72,7 +74,7 @@ pub struct ReplicateEntity<T> {
     pub identity: EntityIdentity,
 
     /// Marker
-    pub marker: T,
+    pub marker: PhantomData<T>,
 }
 
 /*
