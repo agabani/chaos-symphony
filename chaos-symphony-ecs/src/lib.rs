@@ -17,9 +17,5 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
-/// Ship.
-pub mod ship;
-/// Ship Spawn.
-pub mod ship_spawn;
 /// Transform.
 pub mod transform;

@@ -3,8 +3,6 @@
 
 //! Chaos Symphony Simulation
 
-mod ship_spawn;
-
 use std::str::FromStr as _;
 
 use bevy::{
@@ -13,16 +11,11 @@ use bevy::{
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    identity::Identity,
-    network::{NetworkEndpointId, NetworkMessage},
-    network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin,
-    network_disconnect::NetworkDisconnectPlugin,
+    identity::Identity, network_authenticate::NetworkAuthenticatePlugin,
+    network_connect::NetworkConnectPlugin, network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
-    ship_spawn::ShipSpawnPlugin,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::{ShipSpawnEvent, ShipSpawnRequest};
 
 #[tokio::main]
 async fn main() {
@@ -58,9 +51,7 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_plugins(ShipSpawnPlugin)
-    .add_systems(Update, route)
-    .add_systems(Update, ship_spawn::request);
+    .add_systems(Update, route);
 
     app.run();
 }
@@ -71,26 +62,6 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
             match message.endpoint.as_str() {
-                ShipSpawnEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnEvent::from(message),
-                        },
-                    ));
-                }
-                ShipSpawnRequest::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnRequest::from(message),
-                        },
-                    ));
-                }
                 endpoint => {
                     warn!(endpoint, "unhandled");
                 }

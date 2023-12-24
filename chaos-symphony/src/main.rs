@@ -3,7 +3,6 @@
 
 //! Chaos Symphony
 
-mod ship;
 mod transformation;
 
 use std::str::FromStr as _;
@@ -17,17 +16,13 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
     authority::{ClientAuthority, ServerAuthority},
     identity::Identity,
-    network::{NetworkEndpointId, NetworkMessage},
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
-    ship_spawn::ShipSpawnPlugin,
     transform::Transformation,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
-use chaos_symphony_protocol::ShipSpawnEvent;
-use ship::ShipPlugin;
 
 use crate::transformation::TransformationPlugin;
 
@@ -65,8 +60,6 @@ async fn main() {
         NetworkDisconnectPlugin,
         NetworkKeepAlivePlugin,
     ))
-    .add_plugins(ShipPlugin)
-    .add_plugins(ShipSpawnPlugin)
     .add_plugins(TransformationPlugin)
     .add_systems(Startup, camera)
     .add_systems(Update, route);
@@ -90,16 +83,6 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
             match message.endpoint.as_str() {
-                ShipSpawnEvent::ENDPOINT => {
-                    commands.spawn((
-                        NetworkEndpointId {
-                            inner: endpoint.id(),
-                        },
-                        NetworkMessage {
-                            inner: ShipSpawnEvent::from(message),
-                        },
-                    ));
-                }
                 endpoint => {
                     warn!(endpoint, "unhandled");
                 }
