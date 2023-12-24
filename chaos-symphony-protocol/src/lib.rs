@@ -4,13 +4,11 @@
 //! Chaos Symphony Protocol
 
 mod authenticate;
-mod identity;
 mod message;
 mod ping;
-mod transformation;
+mod types;
 
 pub use authenticate::*;
-pub use identity::*;
 pub use message::*;
 pub use ping::*;
-pub use transformation::*;
+pub use types::*;
