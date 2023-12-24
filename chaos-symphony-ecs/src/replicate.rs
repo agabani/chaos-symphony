@@ -10,7 +10,7 @@ use crate::{
     network::{NetworkEndpointId, NetworkIdentity, NetworkMessage},
     ship::Ship,
     transform::Transformation,
-    types::{EntityClientAuthority, EntityServerAuthority, Identity, Replicate},
+    types::{Identity, Replicate},
 };
 
 /// Replicate Plugin.
@@ -89,8 +89,7 @@ fn request(
         &NetworkEndpointId,
         &NetworkMessage<ReplicateRequest>,
     )>,
-    client_endpoints: Query<&NetworkEndpoint, With<EntityClientAuthority>>,
-    server_endpoints: Query<&NetworkEndpoint, With<EntityServerAuthority>>,
+    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
     identities: Query<&Identity>,
 ) {
     messages.for_each(|(entity, endpoint_id, message)| {
@@ -101,9 +100,8 @@ fn request(
 
         let message = &message.inner;
 
-        let Some(endpoint) = server_endpoints
+        let Some(endpoint) = endpoints
             .iter()
-            .chain(client_endpoints.iter())
             .find(|endpoint| endpoint.id() == endpoint_id.inner)
         else {
             warn!("endpoint not found");
