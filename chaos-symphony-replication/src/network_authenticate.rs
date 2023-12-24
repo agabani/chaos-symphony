@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkMessage},
-    types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority},
+    types::NetworkIdentity,
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
@@ -43,21 +43,10 @@ fn request(
         };
 
         let mut commands = commands.entity(entity);
-
-        let identity = &message.inner.payload.identity;
-
-        match identity.noun.as_str() {
-            "ai" | "client" => {
-                commands.insert(NetworkClientAuthority);
-            }
-            "simulation" => {
-                commands.insert(NetworkServerAuthority);
-            }
-            noun => todo!("{noun}"),
-        };
+        let payload = &message.inner.payload;
 
         let network_identity = NetworkIdentity {
-            inner: identity.clone().into(),
+            inner: payload.identity.clone().into(),
         };
         info!(network_identity =? network_identity, "authenticated");
         commands.insert(network_identity);
@@ -65,7 +54,7 @@ fn request(
         let response = AuthenticateResponse::message(
             message.inner.id,
             AuthenticateResponsePayload::Success {
-                identity: identity.clone(),
+                identity: payload.identity.clone(),
             },
         );
         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {
