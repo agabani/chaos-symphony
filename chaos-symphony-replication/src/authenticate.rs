@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
     network::{NetworkEndpointId, NetworkMessage},
+    types::{ClientAuthority, ServerAuthority},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{

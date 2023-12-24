@@ -11,9 +11,9 @@ use bevy::{
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
-    identity::Identity, network_authenticate::NetworkAuthenticatePlugin,
-    network_connect::NetworkConnectPlugin, network_disconnect::NetworkDisconnectPlugin,
-    network_keep_alive::NetworkKeepAlivePlugin,
+    network_authenticate::NetworkAuthenticatePlugin, network_connect::NetworkConnectPlugin,
+    network_disconnect::NetworkDisconnectPlugin, network_keep_alive::NetworkKeepAlivePlugin,
+    types::Identity,
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 

@@ -14,13 +14,11 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use chaos_symphony_ecs::{
-    authority::{ClientAuthority, ServerAuthority},
-    identity::Identity,
     network_authenticate::NetworkAuthenticatePlugin,
     network_connect::NetworkConnectPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_keep_alive::NetworkKeepAlivePlugin,
-    transform::Transformation,
+    types::{ClientAuthority, Identity, ServerAuthority, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv};
 

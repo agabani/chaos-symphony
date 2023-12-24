@@ -3,10 +3,6 @@
 
 //! Chaos Symphony ECS
 
-/// Authority.
-pub mod authority;
-/// Identity.
-pub mod identity;
 /// Network.
 pub mod network;
 /// Network Authenticate.
@@ -17,5 +13,5 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
-/// Transform.
-pub mod transform;
+/// Types.
+pub mod types;
