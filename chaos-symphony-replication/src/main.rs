@@ -13,7 +13,9 @@ use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use chaos_symphony_ecs::network_disconnect::NetworkDisconnectPlugin;
+use chaos_symphony_ecs::{
+    network_authority::NetworkAuthorityPlugin, network_disconnect::NetworkDisconnectPlugin,
+};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use identities::IdentitiesPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
@@ -44,6 +46,7 @@ async fn main() {
             server: true,
         },
         NetworkAuthenticatePlugin,
+        NetworkAuthorityPlugin,
         NetworkDisconnectPlugin,
     ))
     // Default Plugins

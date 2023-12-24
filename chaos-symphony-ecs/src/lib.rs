@@ -9,6 +9,8 @@ pub mod identities;
 pub mod network;
 /// Network Authenticate.
 pub mod network_authenticate;
+/// Network Authority.
+pub mod network_authority;
 /// Network Connect.
 pub mod network_connect;
 /// Network Disconnect.
@@ -34,6 +36,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             network_authenticate::NetworkAuthenticatePlugin {
                 identity: self.identity.clone(),
             },
+            network_authority::NetworkAuthorityPlugin,
             network_connect::NetworkConnectPlugin,
             network_disconnect::NetworkDisconnectPlugin,
             network_keep_alive::NetworkKeepAlivePlugin,
