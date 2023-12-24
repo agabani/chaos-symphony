@@ -64,8 +64,8 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             transformation::TransformationPlugin,
         ));
 
-        app.register_type::<types::ClientAuthority>()
-            .register_type::<types::ServerAuthority>()
+        app.register_type::<types::EntityClientAuthority>()
+            .register_type::<types::EntityServerAuthority>()
             .register_type::<types::Identity>()
             .register_type::<transform::Transformation>()
             .register_type::<bevy::utils::Uuid>();

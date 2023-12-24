@@ -3,7 +3,7 @@ use chaos_symphony_ecs::{
     network::{NetworkEndpointId, NetworkIdentity, NetworkMessage},
     ship::Ship,
     transform::Transformation,
-    types::{ClientAuthority, Identity, ServerAuthority},
+    types::{EntityClientAuthority, EntityServerAuthority, Identity},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{ReplicateRequest, ReplicateResponse, ReplicateResponsePayload};
@@ -16,8 +16,17 @@ pub struct ReplicatePlugin;
 
 impl Plugin for ReplicatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, request);
+        app.add_systems(Update, (initiate, request));
     }
+}
+
+fn initiate(
+    mut commands: Commands,
+    identities: Query<(&Identity, &EntityServerAuthority), Added<Identity>>,
+) {
+    identities.for_each(|identity| {
+        error!(identity=?identity,"added");
+    })
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -69,11 +78,11 @@ fn request(
         info!("replicating");
         commands.spawn((
             *endpoint_id,
-            Replicate::<ClientAuthority>::new(identity.clone()),
+            Replicate::<EntityClientAuthority>::new(identity.clone()),
         ));
         commands.spawn((
             *endpoint_id,
-            Replicate::<ServerAuthority>::new(identity.clone()),
+            Replicate::<EntityServerAuthority>::new(identity.clone()),
         ));
         commands.spawn((
             //

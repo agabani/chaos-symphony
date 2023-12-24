@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_ecs::types::{ClientAuthority, Identity, ServerAuthority};
+use chaos_symphony_ecs::types::{EntityClientAuthority, EntityServerAuthority, Identity};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{IdentityEvent, IdentityEventPayload};
 
@@ -15,8 +15,8 @@ impl Plugin for IdentityPlugin {
 
 fn broadcast(
     identities: Query<&Identity, Added<Identity>>,
-    server_endpoints: Query<&NetworkEndpoint, With<ServerAuthority>>,
-    client_endpoints: Query<&NetworkEndpoint, With<ClientAuthority>>,
+    server_endpoints: Query<&NetworkEndpoint, With<EntityServerAuthority>>,
+    client_endpoints: Query<&NetworkEndpoint, With<EntityClientAuthority>>,
 ) {
     identities.for_each(|identity| {
         let endpoints = server_endpoints.iter().chain(client_endpoints.iter());

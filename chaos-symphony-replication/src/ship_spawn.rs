@@ -5,7 +5,7 @@ use chaos_symphony_ecs::{
         NetworkClientAuthority, NetworkEndpointId, NetworkIdentity, NetworkMessage,
         NetworkServerAuthority,
     },
-    types::{ClientAuthority, Identity, ServerAuthority},
+    types::{EntityClientAuthority, EntityServerAuthority, Identity},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
@@ -31,8 +31,8 @@ fn callback(
         Entity,
         &ShipSpawning,
         &NetworkPath,
-        &ClientAuthority,
-        &ServerAuthority,
+        &EntityClientAuthority,
+        &EntityServerAuthority,
     )>,
 ) {
     callbacks.for_each(
@@ -149,10 +149,10 @@ fn request(
                     inner: server_endpoint.id(),
                 },
             },
-            ClientAuthority {
+            EntityClientAuthority {
                 identity: client_identity.inner.clone(),
             },
-            ServerAuthority {
+            EntityServerAuthority {
                 identity: server_identity.inner.clone(),
             },
         ));

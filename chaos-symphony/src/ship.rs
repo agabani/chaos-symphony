@@ -1,7 +1,7 @@
 use bevy::{prelude::*, render::mesh::shape::RegularPolygon, sprite::MaterialMesh2dBundle};
 use chaos_symphony_ecs::{
     ship::Ship,
-    types::{ClientAuthority, ServerAuthority},
+    types::{EntityClientAuthority, EntityServerAuthority},
 };
 
 /// Ship Plugin.
@@ -19,7 +19,7 @@ fn added(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    ships: Query<(Entity, &ClientAuthority, &ServerAuthority), Added<Ship>>,
+    ships: Query<(Entity, &EntityClientAuthority, &EntityServerAuthority), Added<Ship>>,
 ) {
     ships.for_each(|(entity, client_authority, server_authority)| {
         commands

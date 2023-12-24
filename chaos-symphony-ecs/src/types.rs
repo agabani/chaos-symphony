@@ -48,16 +48,16 @@ impl From<Identity> for chaos_symphony_protocol::Identity {
     }
 }
 
-/// Client Authority.
+/// Entity Client Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
-pub struct ClientAuthority {
+pub struct EntityClientAuthority {
     /// Identity.
     pub identity: Identity,
 }
 
-impl ClientAuthority {
-    /// Creates a new [`ClientAuthority`].
+impl EntityClientAuthority {
+    /// Creates a new [`EntityClientAuthority`].
     #[must_use]
     pub fn new(identity: Identity) -> Self {
         Self { identity }
@@ -77,16 +77,16 @@ pub struct EntityIdentity {
     inner: Identity,
 }
 
-/// Server Authority.
+/// Entity Server Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Component, Reflect)]
-pub struct ServerAuthority {
+pub struct EntityServerAuthority {
     /// Identity.
     pub identity: Identity,
 }
 
-impl ServerAuthority {
-    /// Creates a new [`ServerAuthority`].
+impl EntityServerAuthority {
+    /// Creates a new [`EntityServerAuthority`].
     #[must_use]
     pub fn new(identity: Identity) -> Self {
         Self { identity }

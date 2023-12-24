@@ -3,7 +3,7 @@ use chaos_symphony_protocol::ClientAuthorityEvent;
 
 use crate::{
     network::NetworkMessage,
-    types::{ClientAuthority, Identity},
+    types::{EntityClientAuthority, Identity},
 };
 
 /// Client Authority Plugin.
@@ -41,6 +41,6 @@ fn event(
         info!(identity =% message.payload.identity, "inserted");
         commands
             .entity(entity)
-            .insert(ClientAuthority::new(authority));
+            .insert(EntityClientAuthority::new(authority));
     });
 }

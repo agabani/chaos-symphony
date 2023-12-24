@@ -1,5 +1,7 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_ecs::{network::NetworkEndpointId, types::ClientAuthority, types::Identity};
+use chaos_symphony_ecs::{
+    network::NetworkEndpointId, types::EntityClientAuthority, types::Identity,
+};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{ClientAuthorityEvent, ClientAuthorityEventPayload};
 
@@ -17,9 +19,13 @@ impl Plugin for ClientAuthorityPlugin {
 
 fn replicate(
     mut commands: Commands,
-    replicates: Query<(Entity, &NetworkEndpointId, &Replicate<ClientAuthority>)>,
+    replicates: Query<(
+        Entity,
+        &NetworkEndpointId,
+        &Replicate<EntityClientAuthority>,
+    )>,
     endpoints: Query<&NetworkEndpoint>,
-    identities: Query<(&Identity, &ClientAuthority)>,
+    identities: Query<(&Identity, &EntityClientAuthority)>,
 ) {
     replicates.for_each(|(entity, endpoint_id, replicate)| {
         commands.entity(entity).despawn();
