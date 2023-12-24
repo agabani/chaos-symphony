@@ -34,7 +34,7 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &ShipSpawning)>) {
 
             info!(identity =% success.identity, "spawned");
             let identity: Identity = success.identity.into();
-            commands.spawn(identity);
+            commands.spawn((identity, Ship));
         }
     });
 }
