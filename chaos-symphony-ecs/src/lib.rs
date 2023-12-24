@@ -19,6 +19,8 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
+/// Replicate Entity Components.
+pub mod replicate_entity_components;
 /// Types.
 pub mod types;
 
@@ -47,6 +49,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
         app.add_plugins((
             entity_identities::EntityIdentitiesPlugin,
             entity_identity::EntityIdentityPlugin,
+            replicate_entity_components::ReplicateEntityComponentsPlugin,
         ));
 
         app.register_type::<bevy::utils::Uuid>()

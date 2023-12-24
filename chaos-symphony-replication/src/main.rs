@@ -6,6 +6,7 @@
 mod entity_identities;
 mod network;
 mod network_authenticate;
+mod replicate_entity_components;
 
 use std::sync::mpsc::TryRecvError;
 
@@ -22,6 +23,7 @@ use chaos_symphony_ecs::{
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
+use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -53,7 +55,7 @@ async fn main() {
         NetworkDisconnectPlugin,
     ))
     // Default Plugins
-    .add_plugins(EntityIdentitiesPlugin)
+    .add_plugins((EntityIdentitiesPlugin, ReplicateEntityComponentsPlugin))
     // ...
     .add_systems(Update, (accepted, route))
     .add_systems(Startup, testing);
