@@ -11,6 +11,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network,
+    network_authenticate::NetworkAuthenticatePlugin,
     types::{Identity, NetworkIdentity},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
@@ -20,16 +21,18 @@ async fn main() {
     let mut app = App::new();
 
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
-        identity: NetworkIdentity {
-            inner: Identity {
-                id: Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
-                noun: "client".to_string(),
-            },
-        },
         bevy_config: BevyConfigPlugin {
             headless: false,
             log_filter: "chaos_symphony".to_string(),
             title: "Chaos Symphony".to_string(),
+        },
+        network_authenticate: NetworkAuthenticatePlugin {
+            identity: NetworkIdentity {
+                inner: Identity {
+                    id: Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
+                    noun: "client".to_string(),
+                },
+            },
         },
     })
     .add_plugins(transformation::TransformationPlugin)

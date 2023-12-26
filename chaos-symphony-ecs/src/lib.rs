@@ -30,11 +30,11 @@ pub mod types;
 
 /// Default Plugins.
 pub struct DefaultPlugins {
-    /// Identity.
-    pub identity: types::NetworkIdentity,
-
     /// Bevy Config.
     pub bevy_config: bevy_config::BevyConfigPlugin,
+
+    /// Network Authenticate.
+    pub network_authenticate: network_authenticate::NetworkAuthenticatePlugin,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
@@ -46,9 +46,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
                 client: true,
                 server: false,
             },
-            network_authenticate::NetworkAuthenticatePlugin {
-                identity: self.identity.clone(),
-            },
+            self.network_authenticate.clone(),
             network_authority::NetworkAuthorityPlugin,
             network_connect::NetworkConnectPlugin,
             network_disconnect::NetworkDisconnectPlugin,

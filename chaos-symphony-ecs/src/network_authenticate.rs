@@ -10,6 +10,7 @@ use crate::types::NetworkIdentity;
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone)]
 pub struct NetworkAuthenticatePlugin {
     /// Identity.
     pub identity: NetworkIdentity,
