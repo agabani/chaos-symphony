@@ -67,16 +67,6 @@ pub struct EntityServerAuthority {
     pub identity: Identity,
 }
 
-/// Replicate Entity Identity
-#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
-pub struct ReplicateEntity<T> {
-    /// Identity.
-    pub identity: EntityIdentity,
-
-    /// Marker
-    pub marker: PhantomData<T>,
-}
-
 /*
  * ============================================================================
  * Network
@@ -99,6 +89,30 @@ pub struct NetworkClientAuthority;
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
 pub struct NetworkServerAuthority;
+
+/*
+ * ============================================================================
+ * Replicate
+ * ============================================================================
+ */
+
+/// Replicate Entity.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct ReplicateEntity<T> {
+    /// Identity.
+    pub identity: EntityIdentity,
+
+    /// Marker
+    pub marker: PhantomData<T>,
+}
+
+/// Replicate Sink.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct ReplicateSink;
+
+/// Replicate Source.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct ReplicateSource;
 
 /*
  * ============================================================================
