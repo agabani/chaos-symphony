@@ -12,7 +12,7 @@ use bevy::{
 };
 use chaos_symphony_ecs::{
     network,
-    types::{Identity, NetworkIdentity},
+    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 
@@ -43,7 +43,10 @@ async fn main() {
             },
         },
     })
-    .add_systems(Update, route);
+    .add_systems(
+        Update,
+        (route, test_spawn_entity_identity_after_network_authenticate),
+    );
 
     app.run();
 }
@@ -62,5 +65,22 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
                 }
             }
         }
+    });
+}
+
+fn test_spawn_entity_identity_after_network_authenticate(
+    mut commands: Commands,
+    query: Query<(), (With<NetworkEndpoint>, Added<NetworkIdentity>)>,
+) {
+    query.for_each(|()| {
+        commands.spawn((
+            EntityIdentity {
+                inner: Identity {
+                    id: Uuid::new_v4(),
+                    noun: "test_simulation".to_string(),
+                },
+            },
+            ReplicateSource,
+        ));
     });
 }

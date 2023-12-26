@@ -7,7 +7,7 @@ use chaos_symphony_protocol::{
     Request as _,
 };
 
-use crate::types::{EntityIdentity, NetworkIdentity, ReplicateSink};
+use crate::types::{EntityIdentity, NetworkIdentity, ReplicateSink, ReplicateSource};
 
 /// Replicate Entity Components Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -59,6 +59,7 @@ fn initiate(
         (Entity, &EntityIdentity),
         (
             Without<ReplicateSink>,
+            Without<ReplicateSource>,
             Without<ReplicateEntityComponentsCallback>,
         ),
     >,

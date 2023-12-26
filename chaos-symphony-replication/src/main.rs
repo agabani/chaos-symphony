@@ -4,6 +4,7 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
+mod entity_identity;
 mod network;
 mod network_authenticate;
 mod replicate_entity_components;
@@ -24,6 +25,7 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
+use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
@@ -59,6 +61,7 @@ async fn main() {
     // Default Plugins
     .add_plugins((
         EntityIdentitiesPlugin,
+        EntityIdentityPlugin,
         ReplicateEntityComponentsPlugin,
         TransformationPlugin,
     ))
@@ -116,7 +119,7 @@ fn testing(mut commands: Commands) {
         EntityIdentity {
             inner: Identity {
                 id: Uuid::new_v4(),
-                noun: "test".to_string(),
+                noun: "test_replication".to_string(),
             },
         },
         Transformation {
