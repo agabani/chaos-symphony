@@ -5,12 +5,9 @@
 
 use std::str::FromStr as _;
 
-use bevy::{
-    log::{Level, LogPlugin},
-    prelude::*,
-    utils::Uuid,
-};
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
+    bevy_config::BevyConfigPlugin,
     network,
     types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource},
 };
@@ -20,27 +17,17 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 async fn main() {
     let mut app = App::new();
 
-    app.add_plugins((
-        MinimalPlugins,
-        LogPlugin {
-            filter: [
-                "info",
-                "chaos_symphony_ecs=debug",
-                "chaos_symphony_network_bevy=debug",
-                "chaos_symphony_simulation=debug",
-                "wgpu_core=warn",
-                "wgpu_hal=warn",
-            ]
-            .join(","),
-            level: Level::DEBUG,
-        },
-    ))
-    .add_plugins(chaos_symphony_ecs::DefaultPlugins {
+    app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         identity: NetworkIdentity {
             inner: Identity {
                 id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
                 noun: "simulation".to_string(),
             },
+        },
+        bevy_config: BevyConfigPlugin {
+            headless: false,
+            log_filter: "chaos_symphony_simulation".to_string(),
+            title: "Chaos Symphony Simulation".to_string(),
         },
     })
     .add_systems(
@@ -68,6 +55,7 @@ fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
     });
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn test_spawn_entity_identity_after_network_authenticate(
     mut commands: Commands,
     query: Query<(), (With<NetworkEndpoint>, Added<NetworkIdentity>)>,

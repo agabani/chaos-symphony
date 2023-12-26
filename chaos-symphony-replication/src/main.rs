@@ -12,12 +12,12 @@ mod replicate_entity_components;
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{
-    log::{Level, LogPlugin},
     math::{DQuat, DVec3},
     prelude::*,
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
+    bevy_config::BevyConfigPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     transformation::TransformationPlugin,
@@ -33,21 +33,11 @@ use replicate_entity_components::ReplicateEntityComponentsPlugin;
 async fn main() {
     let mut app = App::new();
 
-    app.add_plugins((
-        MinimalPlugins,
-        LogPlugin {
-            filter: [
-                "info",
-                "chaos_symphony_ecs=debug",
-                "chaos_symphony_network_bevy=debug",
-                "chaos_symphony_replication=debug",
-                "wgpu_core=warn",
-                "wgpu_hal=warn",
-            ]
-            .join(","),
-            level: Level::DEBUG,
-        },
-    ))
+    app.add_plugins(BevyConfigPlugin {
+        headless: false,
+        log_filter: "chaos_symphony_replication".to_string(),
+        title: "Chaos Symphony Replication".to_string(),
+    })
     // Default Plugins (Network)
     .add_plugins((
         NetworkPlugin {

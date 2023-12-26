@@ -3,6 +3,8 @@
 
 //! Chaos Symphony ECS
 
+/// Bevy Config.
+pub mod bevy_config;
 /// Entity Identities.
 pub mod entity_identities;
 /// Entity Identity.
@@ -30,10 +32,15 @@ pub mod types;
 pub struct DefaultPlugins {
     /// Identity.
     pub identity: types::NetworkIdentity,
+
+    /// Bevy Config.
+    pub bevy_config: bevy_config::BevyConfigPlugin,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
     fn build(&self, app: &mut bevy::prelude::App) {
+        app.add_plugins(self.bevy_config.clone());
+
         app.add_plugins((
             chaos_symphony_network_bevy::NetworkPlugin {
                 client: true,

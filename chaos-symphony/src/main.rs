@@ -7,12 +7,9 @@ mod transformation;
 
 use std::str::FromStr as _;
 
-use bevy::{
-    log::{Level, LogPlugin},
-    prelude::*,
-    utils::Uuid,
-};
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
+    bevy_config::BevyConfigPlugin,
     network,
     types::{Identity, NetworkIdentity},
 };
@@ -22,27 +19,17 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 async fn main() {
     let mut app = App::new();
 
-    app.add_plugins(
-        DefaultPlugins.set(LogPlugin {
-            filter: [
-                "info",
-                "chaos_symphony_ecs=debug",
-                "chaos_symphony_network_bevy=debug",
-                "chaos_symphony=debug",
-                "wgpu_core=warn",
-                "wgpu_hal=warn",
-            ]
-            .join(","),
-            level: Level::DEBUG,
-        }),
-    )
-    .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-    .add_plugins(chaos_symphony_ecs::DefaultPlugins {
+    app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         identity: NetworkIdentity {
             inner: Identity {
                 id: Uuid::from_str("0d9aa2b8-0860-42c2-aa20-c2e66dac32b4").unwrap(),
                 noun: "client".to_string(),
             },
+        },
+        bevy_config: BevyConfigPlugin {
+            headless: false,
+            log_filter: "chaos_symphony".to_string(),
+            title: "Chaos Symphony".to_string(),
         },
     })
     .add_plugins(transformation::TransformationPlugin)
