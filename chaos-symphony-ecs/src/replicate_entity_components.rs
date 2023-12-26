@@ -7,7 +7,7 @@ use chaos_symphony_protocol::{
     Request as _,
 };
 
-use crate::types::{EntityIdentity, NetworkIdentity};
+use crate::types::{EntityIdentity, NetworkIdentity, ReplicateSink, ReplicateSource};
 
 /// Replicate Entity Components Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -18,9 +18,6 @@ impl Plugin for ReplicateEntityComponentsPlugin {
         app.add_systems(Update, (callback, initiate));
     }
 }
-
-#[derive(Debug, Clone, Copy, Component, Reflect)]
-struct ReplicatedEntityComponents;
 
 #[allow(clippy::needless_pass_by_value)]
 fn callback(
@@ -47,7 +44,7 @@ fn callback(
                 }
                 ReplicateEntityComponentsResponsePayload::Success => {
                     info!("accepted by server");
-                    commands.insert(ReplicatedEntityComponents);
+                    commands.insert(ReplicateSink);
                 }
             };
         }
@@ -61,7 +58,8 @@ fn initiate(
     identities: Query<
         (Entity, &EntityIdentity),
         (
-            Without<ReplicatedEntityComponents>,
+            Without<ReplicateSink>,
+            Without<ReplicateSource>,
             Without<ReplicateEntityComponentsCallback>,
         ),
     >,

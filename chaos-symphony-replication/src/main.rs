@@ -4,6 +4,7 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
+mod entity_identity;
 mod network;
 mod network_authenticate;
 mod replicate_entity_components;
@@ -11,12 +12,12 @@ mod replicate_entity_components;
 use std::sync::mpsc::TryRecvError;
 
 use bevy::{
-    log::{Level, LogPlugin},
     math::{DQuat, DVec3},
     prelude::*,
     utils::Uuid,
 };
 use chaos_symphony_ecs::{
+    bevy_config::BevyConfigPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     transformation::TransformationPlugin,
@@ -24,6 +25,7 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
+use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
@@ -31,21 +33,11 @@ use replicate_entity_components::ReplicateEntityComponentsPlugin;
 async fn main() {
     let mut app = App::new();
 
-    app.add_plugins((
-        MinimalPlugins,
-        LogPlugin {
-            filter: [
-                "info",
-                "chaos_symphony_ecs=debug",
-                "chaos_symphony_network_bevy=debug",
-                "chaos_symphony_replication=debug",
-                "wgpu_core=warn",
-                "wgpu_hal=warn",
-            ]
-            .join(","),
-            level: Level::DEBUG,
-        },
-    ))
+    app.add_plugins(BevyConfigPlugin {
+        headless: false,
+        log_filter: "chaos_symphony_replication".to_string(),
+        title: "Chaos Symphony Replication".to_string(),
+    })
     // Default Plugins (Network)
     .add_plugins((
         NetworkPlugin {
@@ -59,6 +51,7 @@ async fn main() {
     // Default Plugins
     .add_plugins((
         EntityIdentitiesPlugin,
+        EntityIdentityPlugin,
         ReplicateEntityComponentsPlugin,
         TransformationPlugin,
     ))
@@ -116,7 +109,7 @@ fn testing(mut commands: Commands) {
         EntityIdentity {
             inner: Identity {
                 id: Uuid::new_v4(),
-                noun: "test".to_string(),
+                noun: "test_replication".to_string(),
             },
         },
         Transformation {

@@ -1324,7 +1324,6 @@ name = "chaos-symphony"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-inspector-egui",
  "chaos-symphony-ecs",
  "chaos-symphony-network-bevy",
  "chaos-symphony-protocol",
@@ -1354,6 +1353,7 @@ name = "chaos-symphony-ecs"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-inspector-egui",
  "chaos-symphony-async",
  "chaos-symphony-network",
  "chaos-symphony-network-bevy",

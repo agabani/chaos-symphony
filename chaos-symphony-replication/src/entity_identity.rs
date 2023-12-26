@@ -1,11 +1,10 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{EntityIdentityEvent, EntityIdentityEventPayload, Event};
-
-use crate::{
+use chaos_symphony_ecs::{
     network::NetworkMessage,
     types::{EntityIdentity, NetworkIdentity, ReplicateSource},
 };
+use chaos_symphony_network_bevy::NetworkEndpoint;
+use chaos_symphony_protocol::{EntityIdentityEvent, EntityIdentityEventPayload, Event};
 
 /// Entity Identity Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -32,7 +31,7 @@ fn event(mut commands: Commands, messages: Query<(Entity, &NetworkMessage<Entity
             inner: payload.inner.clone().into(),
         };
         info!(entity_identity =? entity_identity, "spawned");
-        commands.spawn(entity_identity);
+        commands.spawn((entity_identity, ReplicateSource));
     });
 }
 
