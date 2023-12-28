@@ -143,3 +143,39 @@ fn recv_events(query: Query<&Message<T>>) {
     // untrusted: validate->apply
 }
 ```
+
+## Implementation (all in one - split)
+
+### Client
+
+### Replication
+
+```rs
+fn send_events(query: Query<&T, Changed<T>>) {
+    // client,replication
+}
+
+fn recv_events_trusted(query: Query<&Message<T>>) {
+    // apply
+}
+
+fn recv_events_untrusted(query: Query<&Message<T>>) {
+    // server
+}
+```
+
+### Server
+
+```rs
+fn send_events(query: Query<&T, Changed<T>>) {
+    // client,replication
+}
+
+fn recv_events_trusted(query: Query<&Message<T>>) {
+    // apply
+}
+
+fn recv_events_untrusted(query: Query<&Message<T>>) {
+    // server
+}
+```
