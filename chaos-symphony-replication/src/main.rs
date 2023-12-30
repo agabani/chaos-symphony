@@ -140,6 +140,7 @@ struct RandomTimer {
     inner: Timer,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn testing_events(
     time: Res<Time>,
     mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
@@ -173,5 +174,5 @@ fn testing_events(
                 };
             });
         }
-    })
+    });
 }
