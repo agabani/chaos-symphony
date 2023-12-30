@@ -76,7 +76,7 @@ async fn main() {
     app.add_plugins(replication::ReplicationPlugin::<
         chaos_symphony_protocol::TransformationEvent,
         chaos_symphony_protocol::TransformationEventPayload,
-    >::new());
+    >::new(replication::ReplicationMode::Replication));
 
     app.register_type::<types::Transformation>();
 

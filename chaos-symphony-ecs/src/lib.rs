@@ -37,6 +37,9 @@ pub struct DefaultPlugins {
 
     /// Network Authenticate.
     pub network_authenticate: network_authenticate::NetworkAuthenticatePlugin,
+
+    /// Replication Mode.
+    pub replication_mode: replication::ReplicationMode,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
@@ -76,6 +79,6 @@ impl bevy::prelude::Plugin for DefaultPlugins {
         app.add_plugins(replication::ReplicationPlugin::<
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
-        >::new());
+        >::new(self.replication_mode));
     }
 }

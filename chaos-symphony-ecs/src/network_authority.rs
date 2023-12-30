@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 
-use crate::types::{NetworkClientAuthority, NetworkIdentity, NetworkServerAuthority};
+use crate::types::{
+    NetworkClientAuthority, NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority,
+};
 
 /// Network Authority Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -22,11 +24,15 @@ fn label(
         "ai" | "client" => {
             commands.entity(entity).insert(NetworkClientAuthority);
         }
+        "replication" => {
+            commands.entity(entity).insert(NetworkReplicationAuthority);
+        }
         "simulation" => {
             commands.entity(entity).insert(NetworkServerAuthority);
         }
         noun => {
             error!(identity_noun = noun, "unrecognized");
+            todo!("unrecognized: {noun}");
         }
     });
 }

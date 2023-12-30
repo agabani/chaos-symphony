@@ -12,6 +12,7 @@ use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network,
     network_authenticate::NetworkAuthenticatePlugin,
+    replication::ReplicationMode,
     types::{Identity, NetworkIdentity},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
@@ -34,6 +35,7 @@ async fn main() {
                 },
             },
         },
+        replication_mode: ReplicationMode::Simulation,
     })
     .add_plugins(transformation::TransformationPlugin)
     .add_systems(Startup, camera)

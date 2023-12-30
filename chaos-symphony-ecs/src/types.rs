@@ -72,6 +72,13 @@ pub struct EntityClientAuthority {
     pub identity: Identity,
 }
 
+/// Entity Replication Authority.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct EntityReplicationAuthority {
+    /// Identity.
+    pub identity: Identity,
+}
+
 /// Entity Server Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
 pub struct EntityServerAuthority {
@@ -96,6 +103,11 @@ pub struct NetworkIdentity {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
 pub struct NetworkClientAuthority;
+
+/// Network Replication Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
+pub struct NetworkReplicationAuthority;
 
 /// Network Server Authority.
 #[allow(clippy::module_name_repetitions)]

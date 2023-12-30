@@ -8,8 +8,9 @@ use crate::types::{EntityIdentity, NetworkIdentity, Transformation, Trusted, Unt
 
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ReplicationPlugin<E, P> {
+    mode: ReplicationMode,
     _e: PhantomData<E>,
     _p: PhantomData<P>,
 }
@@ -17,8 +18,9 @@ pub struct ReplicationPlugin<E, P> {
 impl<E, P> ReplicationPlugin<E, P> {
     /// Creates a new [`ReplicationPlugin`].
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new(mode: ReplicationMode) -> Self {
         Self {
+            mode,
             _e: PhantomData,
             _p: PhantomData,
         }
@@ -34,8 +36,29 @@ where
         app.add_event::<Trusted<E>>().add_event::<Untrusted<E>>();
 
         app.add_systems(Update, apply_trusted_event::<E>);
-        app.add_systems(Update, send_trusted_event::<E, P>);
+
+        match self.mode {
+            ReplicationMode::Client => {}
+            ReplicationMode::Replication => {
+                app.add_systems(Update, replication_send_trusted_event::<E, P>);
+            }
+            ReplicationMode::Simulation => {}
+        };
     }
+}
+
+/// Replication Mode.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy)]
+pub enum ReplicationMode {
+    /// Client.
+    Client,
+
+    /// Replication.
+    Replication,
+
+    /// Simulation.
+    Simulation,
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -63,7 +86,7 @@ fn apply_trusted_event<E>(
     });
 }
 
-fn send_trusted_event<E, P>(
+fn replication_send_trusted_event<E, P>(
     mut reader: EventReader<Trusted<E>>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
 ) where
