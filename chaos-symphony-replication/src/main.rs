@@ -20,8 +20,9 @@ use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
+    replication::{self},
     transformation::TransformationPlugin,
-    types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
+    types::{self, EntityIdentity, Identity, NetworkIdentity, Transformation, Trusted},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use chaos_symphony_protocol::{Event, TransformationEvent, TransformationEventPayload};
@@ -66,7 +67,15 @@ async fn main() {
     // ...
     .add_systems(Update, (accepted, route))
     .add_systems(Startup, testing)
-    .add_systems(Update, testing_events);
+    .add_systems(Update, testing_events_correct);
+
+    // SPIKE IN PROGRESS
+    app.add_plugins(replication::ReplicationPlugin::<
+        types::Transformation,
+        chaos_symphony_protocol::TransformationEvent,
+    >::new());
+
+    app.register_type::<types::Transformation>();
 
     app.run();
 }
@@ -173,6 +182,39 @@ fn testing_events(
                     error!("failed to send test events");
                 };
             });
+        }
+    });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn testing_events_correct(
+    time: Res<Time>,
+    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
+    mut writer: EventWriter<Trusted<TransformationEvent>>,
+) {
+    query.for_each_mut(|(entity_identity, mut timer)| {
+        if timer.inner.tick(time.delta()).finished() {
+            let message = TransformationEvent::message(
+                Uuid::new_v4(),
+                TransformationEventPayload {
+                    entity_identity: entity_identity.inner.clone().into(),
+                    transformation: chaos_symphony_protocol::Transformation {
+                        orientation: chaos_symphony_protocol::Orientation {
+                            x: 0.0,
+                            y: 0.0,
+                            z: 0.0,
+                            w: 1.0,
+                        },
+                        position: chaos_symphony_protocol::Position {
+                            x: time.elapsed_seconds_f64(),
+                            y: time.elapsed_seconds_f64(),
+                            z: time.elapsed_seconds_f64(),
+                        },
+                    },
+                },
+            );
+
+            writer.send(Trusted { inner: message });
         }
     });
 }
