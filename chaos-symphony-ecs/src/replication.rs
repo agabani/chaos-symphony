@@ -1,43 +1,45 @@
 use std::marker::PhantomData;
 
 use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
+use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::TransformationEvent;
 
-use crate::types::{EntityIdentity, Transformation, Trusted, Untrusted};
+use crate::types::{EntityIdentity, NetworkIdentity, Transformation, Trusted, Untrusted};
 
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Default)]
-pub struct ReplicationPlugin<C, E> {
-    _t: PhantomData<C>,
+pub struct ReplicationPlugin<E, P> {
     _e: PhantomData<E>,
+    _p: PhantomData<P>,
 }
 
-impl<C, E> ReplicationPlugin<C, E> {
+impl<E, P> ReplicationPlugin<E, P> {
     /// Creates a new [`ReplicationPlugin`].
     #[must_use]
     pub fn new() -> Self {
         Self {
-            _t: PhantomData,
             _e: PhantomData,
+            _p: PhantomData,
         }
     }
 }
 
-impl<C, E> Plugin for ReplicationPlugin<C, E>
+impl<E, P> Plugin for ReplicationPlugin<E, P>
 where
-    C: Component,
-    E: Replicate + Send + Sync + 'static,
+    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+    P: Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
         app.add_event::<Trusted<E>>().add_event::<Untrusted<E>>();
 
-        app.add_systems(Update, apply_trusted_event::<C, E>);
+        app.add_systems(Update, apply_trusted_event::<E>);
+        app.add_systems(Update, send_trusted_event::<E, P>);
     }
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn apply_trusted_event<C, E>(
+fn apply_trusted_event<E>(
     mut commands: Commands,
     mut reader: EventReader<Trusted<E>>,
     query: Query<(&EntityIdentity, Entity)>,
@@ -61,6 +63,27 @@ fn apply_trusted_event<C, E>(
     });
 }
 
+fn send_trusted_event<E, P>(
+    mut reader: EventReader<Trusted<E>>,
+    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+) where
+    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+{
+    reader.read().for_each(|event| {
+        endpoints
+            .iter()
+            .filter(|(_, network_identity)| {
+                network_identity.inner != *event.inner.source_identity()
+            })
+            .for_each(|(endpoint, _)| {
+                let message = event.inner.clone();
+                if message.try_send(endpoint).is_err() {
+                    error!("failed to send event");
+                };
+            });
+    });
+}
+
 /// Replicate.
 pub trait Replicate {
     /// Entity Identity.
@@ -71,6 +94,9 @@ pub trait Replicate {
 
     /// Insert Bundle.
     fn insert_bundle(&self, commands: EntityCommands<'_, '_, '_>);
+
+    /// Source Identity.
+    fn source_identity(&self) -> &chaos_symphony_protocol::Identity;
 }
 
 impl Replicate for TransformationEvent {
@@ -85,5 +111,9 @@ impl Replicate for TransformationEvent {
     fn insert_bundle(&self, mut commands: EntityCommands) {
         let component: Transformation = self.payload.transformation.into();
         commands.insert(component);
+    }
+
+    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
+        &self.header.source_identity.as_ref().unwrap()
     }
 }

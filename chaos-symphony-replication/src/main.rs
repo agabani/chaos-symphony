@@ -22,7 +22,10 @@ use chaos_symphony_ecs::{
     network_disconnect::NetworkDisconnectPlugin,
     replication::{self},
     transformation::TransformationPlugin,
-    types::{self, EntityIdentity, Identity, NetworkIdentity, Transformation, Trusted},
+    types::{
+        self, EntityIdentity, EntityServerAuthority, Identity, NetworkIdentity, Transformation,
+        Trusted,
+    },
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use chaos_symphony_protocol::{Event, TransformationEvent, TransformationEventPayload};
@@ -71,8 +74,8 @@ async fn main() {
 
     // SPIKE IN PROGRESS
     app.add_plugins(replication::ReplicationPlugin::<
-        types::Transformation,
         chaos_symphony_protocol::TransformationEvent,
+        chaos_symphony_protocol::TransformationEventPayload,
     >::new());
 
     app.register_type::<types::Transformation>();
@@ -128,6 +131,12 @@ fn testing(mut commands: Commands) {
             inner: Identity {
                 id: Uuid::new_v4(),
                 noun: "test_replication".to_string(),
+            },
+        },
+        EntityServerAuthority {
+            identity: Identity {
+                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                noun: "simulation".to_string(),
             },
         },
         Transformation {
@@ -194,7 +203,7 @@ fn testing_events_correct(
 ) {
     query.for_each_mut(|(entity_identity, mut timer)| {
         if timer.inner.tick(time.delta()).finished() {
-            let message = TransformationEvent::message(
+            let mut message = TransformationEvent::message(
                 Uuid::new_v4(),
                 TransformationEventPayload {
                     entity_identity: entity_identity.inner.clone().into(),
@@ -213,6 +222,11 @@ fn testing_events_correct(
                     },
                 },
             );
+
+            message.header.source_identity = Some(chaos_symphony_protocol::Identity {
+                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                noun: "simulation".to_string(),
+            });
 
             writer.send(Trusted { inner: message });
         }
