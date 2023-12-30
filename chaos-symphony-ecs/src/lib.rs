@@ -23,6 +23,8 @@ pub mod network_disconnect;
 pub mod network_keep_alive;
 /// Replicate Entity Components.
 pub mod replicate_entity_components;
+/// Replication.
+pub mod replication;
 /// Transformation.
 pub mod transformation;
 /// Types.
@@ -69,5 +71,11 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::NetworkClientAuthority>()
             .register_type::<types::NetworkServerAuthority>()
             .register_type::<types::Transformation>();
+
+        // SPIKE IN PROGRESS
+        app.add_plugins(replication::ReplicationPlugin::<
+            types::Transformation,
+            chaos_symphony_protocol::TransformationEvent,
+        >::new());
     }
 }

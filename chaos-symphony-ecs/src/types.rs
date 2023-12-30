@@ -40,6 +40,18 @@ impl From<Identity> for chaos_symphony_protocol::Identity {
     }
 }
 
+impl PartialEq<chaos_symphony_protocol::Identity> for Identity {
+    fn eq(&self, other: &chaos_symphony_protocol::Identity) -> bool {
+        self.id == other.id && self.noun == other.noun
+    }
+}
+
+impl PartialEq<Identity> for chaos_symphony_protocol::Identity {
+    fn eq(&self, other: &Identity) -> bool {
+        self.id == other.id && self.noun == other.noun
+    }
+}
+
 /*
  * ============================================================================
  * Entity
@@ -146,4 +158,24 @@ impl From<Transformation> for chaos_symphony_protocol::Transformation {
             position: value.position.into(),
         }
     }
+}
+
+/*
+ * ============================================================================
+ * Trust
+ * ============================================================================
+ */
+
+/// Trusted.
+#[derive(Debug, Clone, Event)]
+pub struct Trusted<T> {
+    /// Inner.
+    pub inner: T,
+}
+
+/// Untrusted.
+#[derive(Debug, Clone, Event)]
+pub struct Untrusted<T> {
+    /// Inner.
+    pub inner: T,
 }
