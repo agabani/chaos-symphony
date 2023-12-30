@@ -51,16 +51,25 @@ fn callback(mut commands: Commands, callbacks: Query<(Entity, &AuthenticateCallb
                 }
             };
 
-            let AuthenticateResponsePayload::Success { identity } = response.payload else {
+            let AuthenticateResponsePayload::Success {
+                client_identity,
+                server_identity,
+            } = response.payload
+            else {
                 error!("failed to authenticate");
                 commands.despawn();
                 return;
             };
 
+            info!(
+                client_identity =% client_identity,
+                server_identity =% server_identity,
+                "authenticated"
+            );
+
             let network_identity = NetworkIdentity {
-                inner: identity.into(),
+                inner: server_identity.into(),
             };
-            info!(network_identity =? network_identity, "authenticated");
             commands.insert(network_identity);
         }
     });

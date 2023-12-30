@@ -9,7 +9,7 @@ mod network;
 mod network_authenticate;
 mod replicate_entity_components;
 
-use std::sync::mpsc::TryRecvError;
+use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 
 use bevy::{
     math::{DQuat, DVec3},
@@ -21,7 +21,7 @@ use chaos_symphony_ecs::{
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     transformation::TransformationPlugin,
-    types::{EntityIdentity, Identity, Transformation},
+    types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
@@ -44,7 +44,14 @@ async fn main() {
             client: false,
             server: true,
         },
-        NetworkAuthenticatePlugin,
+        NetworkAuthenticatePlugin {
+            identity: NetworkIdentity {
+                inner: Identity {
+                    id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
+                    noun: "replication".to_string(),
+                },
+            },
+        },
         NetworkAuthorityPlugin,
         NetworkDisconnectPlugin,
     ))

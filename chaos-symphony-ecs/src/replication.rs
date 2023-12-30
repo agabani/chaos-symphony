@@ -15,6 +15,7 @@ pub struct ReplicationPlugin<C, E> {
 
 impl<C, E> ReplicationPlugin<C, E> {
     /// Creates a new [`ReplicationPlugin`].
+    #[must_use]
     pub fn new() -> Self {
         Self {
             _t: PhantomData,
@@ -35,6 +36,7 @@ where
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn apply_trusted_event<C, E>(
     mut commands: Commands,
     mut reader: EventReader<Trusted<E>>,
@@ -81,7 +83,7 @@ impl Replicate for TransformationEvent {
     }
 
     fn insert_bundle(&self, mut commands: EntityCommands) {
-        let component: Transformation = self.payload.transformation.clone().into();
+        let component: Transformation = self.payload.transformation.into();
         commands.insert(component);
     }
 }

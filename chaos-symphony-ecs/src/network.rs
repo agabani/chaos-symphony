@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use bevy::prelude::*;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{EntityIdentityEvent, Event as _, Message, TransformationEvent};
@@ -49,14 +51,20 @@ pub fn route(
 
 fn dispatch<T>(commands: &mut Commands, identity: Option<&NetworkIdentity>, mut message: Message<T>)
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + 'static + Debug,
 {
     if let Some(identity) = identity {
         match identity.inner.noun.as_str() {
             "client" | "simulation" => {
-                message.header.source_identity = Some(identity.inner.clone().into())
+                // always overwrite source from untrusted endpoints.
+                message.header.source_identity = Some(identity.inner.clone().into());
             }
-            "replication" => {}
+            "replication" => {
+                // populate source from trusted endpoints if not present.
+                if message.header.source_identity.is_none() {
+                    message.header.source_identity = Some(identity.inner.clone().into());
+                }
+            }
             noun => todo!("{noun}"),
         };
     }
@@ -68,7 +76,7 @@ where
                     world.send_event(Untrusted { inner: message });
                 });
             }
-            "simulation" => {
+            "replication" | "simulation" => {
                 commands.add(|world: &mut World| {
                     world.send_event(Trusted { inner: message });
                 });

@@ -57,7 +57,10 @@ pub enum AuthenticateResponsePayload {
 
     /// Success.
     Success {
-        /// Identity.
-        identity: Identity,
+        /// Client Identity.
+        client_identity: Identity,
+
+        /// Server Identity.
+        server_identity: Identity,
     },
 }
