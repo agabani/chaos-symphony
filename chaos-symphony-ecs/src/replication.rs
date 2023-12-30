@@ -1,10 +1,4 @@
 use bevy::prelude::*;
-use chaos_symphony_protocol::TransformationEvent;
-
-use crate::{
-    network::NetworkMessage,
-    types::{EntityIdentity, Transformation},
-};
 
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -15,19 +9,24 @@ pub struct ReplicationPlugin {
 
 impl Plugin for ReplicationPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(Update, router);
+
         match self.mode {
             ReplicationMode::Client => {
-                app.add_systems(Update, client_send_events)
-                    .add_systems(Update, client_recv_events);
+                app.add_systems(Update, client_send_untrusted_events)
+                    .add_systems(Update, client_apply_untrusted_events)
+                    .add_systems(Update, client_apply_trusted_events);
             }
             ReplicationMode::Replication => {
-                app.add_systems(Update, replication_send_events)
-                    .add_systems(Update, replication_recv_events_from_client)
-                    .add_systems(Update, replication_recv_events_from_simulation);
+                app.add_systems(Update, replication_send_untrusted_events)
+                    .add_systems(Update, replication_send_trusted_events)
+                    .add_systems(Update, replication_apply_trusted_events);
             }
             ReplicationMode::Simulation => {
-                app.add_systems(Update, simulation_send_events)
-                    .add_systems(Update, simulation_recv_events);
+                app.add_systems(Update, simulation_send_trusted_events)
+                    .add_systems(Update, simulation_apply_trusted_events);
+
+                app.add_systems(Update, simulation_validate_events);
             }
         }
     }
@@ -50,69 +49,69 @@ pub enum ReplicationMode {
  * Send Events
  * ============================================================================
  */
-fn client_send_events(query: Query<(&EntityIdentity, &Transformation), Changed<Transformation>>) {
-    query.for_each(|(_identity, _component)| {
+
+fn router(mut commands: Commands) {
+    commands.add(|world: &mut World| {
+        world.send_event(UntrustedTransformationEvent {});
+    });
+}
+
+fn client_send_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
         // send to replication.
     });
 }
 
-fn simulation_send_events(
-    query: Query<(&EntityIdentity, &Transformation), Changed<Transformation>>,
-) {
-    query.for_each(|(_identity, _component)| {
+fn client_apply_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // apply.
+    });
+}
+
+fn client_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // apply.
+    });
+}
+
+fn simulation_send_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
         // send to replication.
     });
 }
 
-fn replication_send_events(
-    query: Query<(&EntityIdentity, &Transformation), Changed<Transformation>>,
+fn simulation_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // send to replication.
+    });
+}
+
+fn simulation_validate_events(
+    mut _reader: EventReader<UntrustedTransformationEvent>,
+    mut _writer: EventReader<TrustedTransformationEvent>,
 ) {
-    query.for_each(|(_identity, _component)| {
-        // send to clients+replication+simulation.
+}
+
+fn replication_send_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // send to simulation[authoritative].
     });
 }
 
-/*
- * ============================================================================
- * Recv Events
- * ============================================================================
- */
-fn client_recv_events(query: Query<&NetworkMessage<TransformationEvent>, With<FromReplication>>) {
-    query.for_each(|_message| {
-        // apply
+fn replication_send_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // send to clients+replication+simulation[non-authoritative].
     });
 }
 
-fn replication_recv_events_from_client(
-    query: Query<&NetworkMessage<TransformationEvent>, With<FromClient>>,
-) {
-    query.for_each(|_message| {
-        // forward to simulation
+fn replication_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+    events.read().for_each(|_event| {
+        // apply.
     });
 }
 
-fn simulation_recv_events(
-    query: Query<&NetworkMessage<TransformationEvent>, With<FromReplication>>,
-) {
-    query.for_each(|_message| {
-        // validate
-        //   apply
-    });
-}
+#[derive(Event)]
+struct UntrustedTransformationEvent {}
 
-fn replication_recv_events_from_simulation(
-    query: Query<&NetworkMessage<TransformationEvent>, With<FromSimulation>>,
-) {
-    query.for_each(|_message| {
-        // apply
-    });
-}
-
-#[derive(Component)]
-struct FromClient;
-
-#[derive(Component)]
-struct FromReplication;
-
-#[derive(Component)]
-struct FromSimulation;
+#[derive(Event)]
+struct TrustedTransformationEvent {}
