@@ -24,6 +24,7 @@ use chaos_symphony_ecs::{
     types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use chaos_symphony_protocol::{Event, TransformationEvent, TransformationEventPayload};
 use entity_identities::EntityIdentitiesPlugin;
 use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
@@ -64,7 +65,8 @@ async fn main() {
     ))
     // ...
     .add_systems(Update, (accepted, route))
-    .add_systems(Startup, testing);
+    .add_systems(Startup, testing)
+    .add_systems(Update, testing_events);
 
     app.run();
 }
@@ -127,5 +129,49 @@ fn testing(mut commands: Commands) {
                 z: 3.0,
             },
         },
+        RandomTimer {
+            inner: Timer::from_seconds(1.0, TimerMode::Repeating),
+        },
     ));
+}
+
+#[derive(Component)]
+struct RandomTimer {
+    inner: Timer,
+}
+
+fn testing_events(
+    time: Res<Time>,
+    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
+    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
+) {
+    query.for_each_mut(|(entity_identity, mut timer)| {
+        if timer.inner.tick(time.delta()).finished() {
+            endpoints.for_each(|endpoint| {
+                let message = TransformationEvent::message(
+                    Uuid::new_v4(),
+                    TransformationEventPayload {
+                        entity_identity: entity_identity.inner.clone().into(),
+                        transformation: chaos_symphony_protocol::Transformation {
+                            orientation: chaos_symphony_protocol::Orientation {
+                                x: 0.0,
+                                y: 0.0,
+                                z: 0.0,
+                                w: 1.0,
+                            },
+                            position: chaos_symphony_protocol::Position {
+                                x: time.elapsed_seconds_f64(),
+                                y: time.elapsed_seconds_f64(),
+                                z: time.elapsed_seconds_f64(),
+                            },
+                        },
+                    },
+                );
+
+                if message.try_send(endpoint).is_err() {
+                    error!("failed to send test events");
+                };
+            });
+        }
+    })
 }
