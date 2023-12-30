@@ -23,6 +23,8 @@ pub mod network_disconnect;
 pub mod network_keep_alive;
 /// Replicate Entity Components.
 pub mod replicate_entity_components;
+/// Replication.
+pub mod replication;
 /// Transformation.
 pub mod transformation;
 /// Types.
