@@ -40,9 +40,11 @@ where
         match self.mode {
             ReplicationMode::Client => {}
             ReplicationMode::Replication => {
-                app.add_systems(Update, replication_send_trusted_event::<E, P>);
+                app.add_systems(Update, send_trusted_event::<E, P>);
             }
-            ReplicationMode::Simulation => {}
+            ReplicationMode::Simulation => {
+                app.add_systems(Update, send_trusted_event::<E, P>);
+            }
         };
     }
 }
@@ -86,7 +88,7 @@ fn apply_trusted_event<E>(
     });
 }
 
-fn replication_send_trusted_event<E, P>(
+fn send_trusted_event<E, P>(
     mut reader: EventReader<Trusted<E>>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
 ) where

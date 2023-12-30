@@ -15,7 +15,11 @@
     },
     {
       "label": "just: run minimal",
-      "dependsOn": ["just: run-replication", "just: run-client"],
+      "dependsOn": [
+        "just: run-replication",
+        "just: run-simulation",
+        "just: run-client"
+      ],
       "problemMatcher": []
     },
     {

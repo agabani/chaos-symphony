@@ -11,9 +11,10 @@ use chaos_symphony_ecs::{
     network,
     network_authenticate::NetworkAuthenticatePlugin,
     replication::ReplicationMode,
-    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource},
+    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Trusted},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
+use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEventPayload};
 
 #[tokio::main]
 async fn main() {
@@ -37,7 +38,11 @@ async fn main() {
     })
     .add_systems(
         Update,
-        (route, test_spawn_entity_identity_after_network_authenticate),
+        (
+            route,
+            test_spawn_entity_identity_after_network_authenticate,
+            testing_events_correct,
+        ),
     );
 
     app.run();
@@ -74,6 +79,52 @@ fn test_spawn_entity_identity_after_network_authenticate(
                 },
             },
             ReplicateSource,
+            RandomTimer {
+                inner: Timer::from_seconds(1.0, TimerMode::Repeating),
+            },
         ));
+    });
+}
+
+#[derive(Component)]
+struct RandomTimer {
+    inner: Timer,
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn testing_events_correct(
+    time: Res<Time>,
+    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
+    mut writer: EventWriter<Trusted<TransformationEvent>>,
+) {
+    query.for_each_mut(|(entity_identity, mut timer)| {
+        if timer.inner.tick(time.delta()).finished() {
+            let mut message = TransformationEvent::message(
+                Uuid::new_v4(),
+                TransformationEventPayload {
+                    entity_identity: entity_identity.inner.clone().into(),
+                    transformation: chaos_symphony_protocol::Transformation {
+                        orientation: chaos_symphony_protocol::Orientation {
+                            x: 0.0,
+                            y: 0.0,
+                            z: 0.0,
+                            w: 1.0,
+                        },
+                        position: chaos_symphony_protocol::Position {
+                            x: time.elapsed_seconds_f64(),
+                            y: time.elapsed_seconds_f64(),
+                            z: time.elapsed_seconds_f64(),
+                        },
+                    },
+                },
+            );
+
+            message.header.source_identity = Some(chaos_symphony_protocol::Identity {
+                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                noun: "simulation".to_string(),
+            });
+
+            writer.send(Trusted { inner: message });
+        }
     });
 }

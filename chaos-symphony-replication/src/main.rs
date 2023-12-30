@@ -68,9 +68,9 @@ async fn main() {
         TransformationPlugin,
     ))
     // ...
-    .add_systems(Update, (accepted, route))
-    .add_systems(Startup, testing)
-    .add_systems(Update, testing_events_correct);
+    .add_systems(Update, (accepted, route));
+    // .add_systems(Startup, testing)
+    // .add_systems(Update, testing_events_correct);
 
     // SPIKE IN PROGRESS
     app.add_plugins(replication::ReplicationPlugin::<
@@ -78,6 +78,7 @@ async fn main() {
         chaos_symphony_protocol::TransformationEventPayload,
     >::new(replication::ReplicationMode::Replication));
 
+    app.register_type::<types::EntityIdentity>();
     app.register_type::<types::Transformation>();
 
     app.run();
@@ -110,11 +111,11 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
 
 #[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
-fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
-    endpoints.for_each(|endpoint| {
+fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&NetworkIdentity>)>) {
+    endpoints.for_each(|(endpoint, identity)| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            if let Some(message) = network::route(&mut commands, endpoint, message) {
+            if let Some(message) = network::route(&mut commands, endpoint, identity, message) {
                 match message.endpoint.as_str() {
                     endpoint => {
                         warn!(endpoint, "unhandled");
