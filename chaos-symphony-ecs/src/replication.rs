@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
 use chaos_symphony_protocol::TransformationEvent;
 
 use crate::types::{EntityIdentity, Transformation, Trusted, Untrusted};
@@ -43,14 +43,19 @@ fn apply_trusted_event<C, E>(
     E: Replicate + Send + Sync + 'static,
 {
     reader.read().for_each(|trusted| {
-        let Some((_, entity)) = query
+        let span = error_span!("event", message_id =%  trusted.inner.id());
+        let _guard = span.enter();
+
+        let Some((entity_identity, entity)) = query
             .iter()
             .find(|(entity_identity, _)| entity_identity.inner == *trusted.inner.entity_identity())
         else {
+            warn!("entity does not exist");
             return;
         };
 
         trusted.inner.insert_bundle(commands.entity(entity));
+        info!(entity_identity =? entity_identity, "updated");
     });
 }
 
@@ -58,6 +63,9 @@ fn apply_trusted_event<C, E>(
 pub trait Replicate {
     /// Entity Identity.
     fn entity_identity(&self) -> &chaos_symphony_protocol::Identity;
+
+    /// Id.
+    fn id(&self) -> Uuid;
 
     /// Insert Bundle.
     fn insert_bundle(&self, commands: EntityCommands<'_, '_, '_>);
@@ -68,7 +76,11 @@ impl Replicate for TransformationEvent {
         &self.payload.entity_identity
     }
 
-    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
+    fn insert_bundle(&self, mut commands: EntityCommands) {
         let component: Transformation = self.payload.transformation.clone().into();
         commands.insert(component);
     }

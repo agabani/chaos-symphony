@@ -2,10 +2,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{Event as _, TransformationEvent};
 
-use crate::{
-    network::NetworkMessage,
-    types::{EntityIdentity, NetworkIdentity, ReplicateEntity, Transformation},
-};
+use crate::types::{EntityIdentity, NetworkIdentity, ReplicateEntity, Transformation};
 
 /// Transformation Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -13,40 +10,8 @@ pub struct TransformationPlugin;
 
 impl Plugin for TransformationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (event, replicate));
+        app.add_systems(Update, replicate);
     }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn event(
-    mut commands: Commands,
-    messages: Query<(Entity, &NetworkMessage<TransformationEvent>)>,
-    entity_identities: Query<(Entity, &EntityIdentity)>,
-) {
-    messages.for_each(|(entity, message)| {
-        let message = &message.inner;
-        commands.entity(entity).despawn();
-
-        let span = error_span!("event", message_id =% message.id);
-        let _guard = span.enter();
-
-        let payload = &message.payload;
-
-        let entity_identity = EntityIdentity {
-            inner: payload.entity_identity.clone().into(),
-        };
-        let Some((entity, _)) = entity_identities
-            .iter()
-            .find(|(_, i)| **i == entity_identity)
-        else {
-            warn!("entity does not exist");
-            return;
-        };
-
-        let transformation: Transformation = payload.transformation.into();
-        commands.entity(entity).insert(transformation);
-        info!(entity_identity =? entity_identity, "updated");
-    });
 }
 
 #[allow(clippy::needless_pass_by_value)]

@@ -7,6 +7,8 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
 
+use crate::Identity;
+
 /*
  * ============================================================================
  * Message
@@ -60,7 +62,10 @@ where
 /// Message Header.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MessageHeader {}
+pub struct MessageHeader {
+    /// Source Identity.
+    pub source_identity: Option<Identity>,
+}
 
 /// Message ID.
 #[allow(clippy::module_name_repetitions)]
@@ -139,7 +144,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
-            header: MessageHeader {},
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }
@@ -175,7 +182,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
-            header: MessageHeader {},
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }
@@ -216,7 +225,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
-            header: MessageHeader {},
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }
