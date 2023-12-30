@@ -165,6 +165,9 @@ pub struct Message {
     /// Endpoint.
     pub endpoint: String,
 
+    /// Header.
+    pub header: String,
+
     /// Payload.
     pub payload: String,
 }
@@ -315,16 +318,19 @@ mod tests {
         let message_1 = Message {
             id: "1".to_string(),
             endpoint: "/1".to_string(),
+            header: "header 1".to_string(),
             payload: "payload 1".to_string(),
         };
         let message_2 = Message {
             id: "2".to_string(),
             endpoint: "/2".to_string(),
+            header: "header 2".to_string(),
             payload: "payload 2".to_string(),
         };
         let message_3 = Message {
             id: "3".to_string(),
             endpoint: "/3".to_string(),
+            header: "header 3".to_string(),
             payload: "payload 3".to_string(),
         };
 
