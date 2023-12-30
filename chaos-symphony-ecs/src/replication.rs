@@ -1,4 +1,9 @@
 use bevy::prelude::*;
+use chaos_symphony_network::Server;
+use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
+use chaos_symphony_protocol::{Event, TransformationEvent};
+
+use crate::types::NetworkIdentity;
 
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -50,68 +55,108 @@ pub enum ReplicationMode {
  * ============================================================================
  */
 
-fn router(mut commands: Commands) {
-    commands.add(|world: &mut World| {
-        world.send_event(UntrustedTransformationEvent {});
+fn router(mut commands: Commands, _query: Query<(&NetworkEndpoint, Option<&NetworkIdentity>)>) {
+    _query.for_each(|(endpoint, identity)| {
+        while let Ok(message) = endpoint.try_recv() {
+            let NetworkRecv::NonBlocking { message } = message;
+
+            match message.endpoint.as_str() {
+                TransformationEvent::ENDPOINT => {
+                    let mut message = TransformationEvent::from(message);
+
+                    if let Some(identity) = identity {
+                        match identity.inner.noun.as_str() {
+                            "client" | "simulation" => {
+                                message.header.source_identity = Some(identity.inner.clone().into())
+                            }
+                            "replication" => {}
+                            noun => todo!("{noun}"),
+                        };
+                    }
+
+                    match &message.header.source_identity {
+                        Some(identity) => match identity.noun.as_str() {
+                            "client" => {
+                                commands.add(|world: &mut World| {
+                                    world.send_event(Untrusted { inner: message });
+                                });
+                            }
+                            "simulation" => {
+                                commands.add(|world: &mut World| {
+                                    world.send_event(Trusted { inner: message });
+                                });
+                            }
+                            noun => todo!("{noun}"),
+                        },
+                        None => {}
+                    }
+                }
+                _ => {}
+            }
+        }
     });
 }
 
-fn client_send_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+fn client_send_untrusted_events(mut events: EventReader<Untrusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // send to replication.
     });
 }
 
-fn client_apply_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+fn client_apply_untrusted_events(mut events: EventReader<Untrusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // apply.
     });
 }
 
-fn client_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+fn client_apply_trusted_events(mut events: EventReader<Trusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // apply.
     });
 }
 
-fn simulation_send_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+fn simulation_send_trusted_events(mut events: EventReader<Trusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // send to replication.
     });
 }
 
-fn simulation_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+fn simulation_apply_trusted_events(mut events: EventReader<Trusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // send to replication.
     });
 }
 
 fn simulation_validate_events(
-    mut _reader: EventReader<UntrustedTransformationEvent>,
-    mut _writer: EventReader<TrustedTransformationEvent>,
+    mut _reader: EventReader<Untrusted<TransformationEvent>>,
+    mut _writer: EventReader<Trusted<TransformationEvent>>,
 ) {
 }
 
-fn replication_send_untrusted_events(mut events: EventReader<UntrustedTransformationEvent>) {
+fn replication_send_untrusted_events(mut events: EventReader<Untrusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // send to simulation[authoritative].
     });
 }
 
-fn replication_send_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+fn replication_send_trusted_events(mut events: EventReader<Trusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // send to clients+replication+simulation[non-authoritative].
     });
 }
 
-fn replication_apply_trusted_events(mut events: EventReader<TrustedTransformationEvent>) {
+fn replication_apply_trusted_events(mut events: EventReader<Trusted<TransformationEvent>>) {
     events.read().for_each(|_event| {
         // apply.
     });
 }
 
 #[derive(Event)]
-struct UntrustedTransformationEvent {}
+struct Trusted<T> {
+    inner: T,
+}
 
 #[derive(Event)]
-struct TrustedTransformationEvent {}
+struct Untrusted<T> {
+    inner: T,
+}

@@ -4,8 +4,10 @@ use bevy::prelude::*;
 use bevy::utils::Uuid;
 use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
+
+use crate::Identity;
 
 /*
  * ============================================================================
@@ -22,6 +24,9 @@ pub struct Message<T> {
     /// Endpoint.
     pub endpoint: String,
 
+    /// Header.
+    pub header: MessageHeader,
+
     /// Payload.
     pub payload: T,
 }
@@ -34,6 +39,7 @@ where
         Self {
             id: value.id.parse().unwrap(),
             endpoint: value.endpoint,
+            header: serde_json::from_str(&value.header).unwrap(),
             payload: serde_json::from_str(&value.payload).unwrap(),
         }
     }
@@ -47,9 +53,17 @@ where
         Self {
             id: value.id.to_string(),
             endpoint: value.endpoint,
+            header: serde_json::to_string(&value.header).unwrap(),
             payload: serde_json::to_string(&value.payload).unwrap(),
         }
     }
+}
+
+/// Message Header.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MessageHeader {
+    /// Source Identity.
+    pub source_identity: Option<Identity>,
 }
 
 /// Message ID.
@@ -128,6 +142,9 @@ where
     fn message(id: Uuid, payload: T) -> Message<T> {
         Message {
             id,
+            header: MessageHeader {
+                source_identity: None,
+            },
             endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
@@ -163,6 +180,9 @@ where
     fn message(id: Uuid, payload: T) -> Message<T> {
         Message {
             id,
+            header: MessageHeader {
+                source_identity: None,
+            },
             endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
@@ -203,6 +223,9 @@ where
     fn message(id: Uuid, payload: T) -> Message<T> {
         Message {
             id,
+            header: MessageHeader {
+                source_identity: None,
+            },
             endpoint: Self::ENDPOINT.to_string(),
             payload,
         }
