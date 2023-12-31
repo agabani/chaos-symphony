@@ -75,7 +75,7 @@ fn apply_trusted_event<E>(
         let span = error_span!("event", message_id =%  trusted.inner.id());
         let _guard = span.enter();
 
-        let Some((entity_identity, entity)) = query
+        let Some((_, entity)) = query
             .iter()
             .find(|(entity_identity, _)| entity_identity.inner == *trusted.inner.entity_identity())
         else {
@@ -84,7 +84,6 @@ fn apply_trusted_event<E>(
         };
 
         trusted.inner.insert_bundle(commands.entity(entity));
-        info!(entity_identity =? entity_identity, "updated");
     });
 }
 

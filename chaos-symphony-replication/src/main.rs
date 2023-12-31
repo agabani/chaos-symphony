@@ -11,24 +11,16 @@ mod replicate_entity_components;
 
 use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 
-use bevy::{
-    math::{DQuat, DVec3},
-    prelude::*,
-    utils::Uuid,
-};
+use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
-    replication::{self},
+    replication,
     transformation::TransformationPlugin,
-    types::{
-        self, EntityIdentity, EntityServerAuthority, Identity, NetworkIdentity, Transformation,
-        Trusted,
-    },
+    types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
-use chaos_symphony_protocol::{Event, TransformationEvent, TransformationEventPayload};
 use entity_identities::EntityIdentitiesPlugin;
 use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
@@ -76,8 +68,8 @@ async fn main() {
         chaos_symphony_protocol::TransformationEventPayload,
     >::new(replication::ReplicationMode::Replication));
 
-    app.register_type::<types::EntityIdentity>();
-    app.register_type::<types::Transformation>();
+    app.register_type::<EntityIdentity>();
+    app.register_type::<Transformation>();
 
     app.run();
 }
