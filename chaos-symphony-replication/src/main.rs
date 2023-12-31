@@ -69,8 +69,6 @@ async fn main() {
     ))
     // ...
     .add_systems(Update, (accepted, route));
-    // .add_systems(Startup, testing)
-    // .add_systems(Update, testing_events_correct);
 
     // SPIKE IN PROGRESS
     app.add_plugins(replication::ReplicationPlugin::<
@@ -122,114 +120,6 @@ fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&Net
                     }
                 }
             }
-        }
-    });
-}
-
-fn testing(mut commands: Commands) {
-    commands.spawn((
-        EntityIdentity {
-            inner: Identity {
-                id: Uuid::new_v4(),
-                noun: "test_replication".to_string(),
-            },
-        },
-        EntityServerAuthority {
-            identity: Identity {
-                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                noun: "simulation".to_string(),
-            },
-        },
-        Transformation {
-            orientation: DQuat::from_rotation_z(0.0),
-            position: DVec3 {
-                x: 1.0,
-                y: 2.0,
-                z: 3.0,
-            },
-        },
-        RandomTimer {
-            inner: Timer::from_seconds(1.0, TimerMode::Repeating),
-        },
-    ));
-}
-
-#[derive(Component)]
-struct RandomTimer {
-    inner: Timer,
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn testing_events(
-    time: Res<Time>,
-    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
-    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
-) {
-    query.for_each_mut(|(entity_identity, mut timer)| {
-        if timer.inner.tick(time.delta()).finished() {
-            endpoints.for_each(|endpoint| {
-                let message = TransformationEvent::message(
-                    Uuid::new_v4(),
-                    TransformationEventPayload {
-                        entity_identity: entity_identity.inner.clone().into(),
-                        transformation: chaos_symphony_protocol::Transformation {
-                            orientation: chaos_symphony_protocol::Orientation {
-                                x: 0.0,
-                                y: 0.0,
-                                z: 0.0,
-                                w: 1.0,
-                            },
-                            position: chaos_symphony_protocol::Position {
-                                x: time.elapsed_seconds_f64(),
-                                y: time.elapsed_seconds_f64(),
-                                z: time.elapsed_seconds_f64(),
-                            },
-                        },
-                    },
-                );
-
-                if message.try_send(endpoint).is_err() {
-                    error!("failed to send test events");
-                };
-            });
-        }
-    });
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn testing_events_correct(
-    time: Res<Time>,
-    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
-    mut writer: EventWriter<Trusted<TransformationEvent>>,
-) {
-    query.for_each_mut(|(entity_identity, mut timer)| {
-        if timer.inner.tick(time.delta()).finished() {
-            let mut message = TransformationEvent::message(
-                Uuid::new_v4(),
-                TransformationEventPayload {
-                    entity_identity: entity_identity.inner.clone().into(),
-                    transformation: chaos_symphony_protocol::Transformation {
-                        orientation: chaos_symphony_protocol::Orientation {
-                            x: 0.0,
-                            y: 0.0,
-                            z: 0.0,
-                            w: 1.0,
-                        },
-                        position: chaos_symphony_protocol::Position {
-                            x: time.elapsed_seconds_f64(),
-                            y: time.elapsed_seconds_f64(),
-                            z: time.elapsed_seconds_f64(),
-                        },
-                    },
-                },
-            );
-
-            message.header.source_identity = Some(chaos_symphony_protocol::Identity {
-                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                noun: "simulation".to_string(),
-            });
-
-            writer.send(Trusted { inner: message });
         }
     });
 }

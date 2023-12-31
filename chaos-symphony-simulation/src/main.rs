@@ -41,7 +41,7 @@ async fn main() {
         (
             route,
             test_spawn_entity_identity_after_network_authenticate,
-            testing_events_correct,
+            test_translate_entity_identity_periodically,
         ),
     );
 
@@ -79,7 +79,7 @@ fn test_spawn_entity_identity_after_network_authenticate(
                 },
             },
             ReplicateSource,
-            RandomTimer {
+            PeriodicTimer {
                 inner: Timer::from_seconds(1.0, TimerMode::Repeating),
             },
         ));
@@ -87,14 +87,14 @@ fn test_spawn_entity_identity_after_network_authenticate(
 }
 
 #[derive(Component)]
-struct RandomTimer {
+struct PeriodicTimer {
     inner: Timer,
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn testing_events_correct(
+fn test_translate_entity_identity_periodically(
     time: Res<Time>,
-    mut query: Query<(&EntityIdentity, &mut RandomTimer)>,
+    mut query: Query<(&EntityIdentity, &mut PeriodicTimer)>,
     mut writer: EventWriter<Trusted<TransformationEvent>>,
 ) {
     query.for_each_mut(|(entity_identity, mut timer)| {
