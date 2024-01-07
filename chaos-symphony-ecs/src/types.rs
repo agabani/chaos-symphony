@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use bevy::{
     math::{DQuat, DVec3},
     prelude::*,
@@ -40,6 +38,18 @@ impl From<Identity> for chaos_symphony_protocol::Identity {
     }
 }
 
+impl PartialEq<chaos_symphony_protocol::Identity> for Identity {
+    fn eq(&self, other: &chaos_symphony_protocol::Identity) -> bool {
+        self.id == other.id && self.noun == other.noun
+    }
+}
+
+impl PartialEq<Identity> for chaos_symphony_protocol::Identity {
+    fn eq(&self, other: &Identity) -> bool {
+        self.id == other.id && self.noun == other.noun
+    }
+}
+
 /*
  * ============================================================================
  * Entity
@@ -53,6 +63,12 @@ pub struct EntityIdentity {
     pub inner: Identity,
 }
 
+/// Entity Authority.
+pub trait EntityAuthority {
+    /// Identity.
+    fn identity(&self) -> &Identity;
+}
+
 /// Entity Client Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
 pub struct EntityClientAuthority {
@@ -60,11 +76,36 @@ pub struct EntityClientAuthority {
     pub identity: Identity,
 }
 
+impl EntityAuthority for EntityClientAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
+}
+
+/// Entity Replication Authority.
+#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
+pub struct EntityReplicationAuthority {
+    /// Identity.
+    pub identity: Identity,
+}
+
+impl EntityAuthority for EntityReplicationAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
+}
+
 /// Entity Server Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
 pub struct EntityServerAuthority {
     /// Identity.
     pub identity: Identity,
+}
+
+impl EntityAuthority for EntityServerAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
 }
 
 /*
@@ -85,6 +126,11 @@ pub struct NetworkIdentity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
 pub struct NetworkClientAuthority;
 
+/// Network Replication Authority.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
+pub struct NetworkReplicationAuthority;
+
 /// Network Server Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
@@ -95,16 +141,6 @@ pub struct NetworkServerAuthority;
  * Replicate
  * ============================================================================
  */
-
-/// Replicate Entity.
-#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
-pub struct ReplicateEntity<T> {
-    /// Identity.
-    pub identity: EntityIdentity,
-
-    /// Marker
-    pub marker: PhantomData<T>,
-}
 
 /// Replicate Sink.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
@@ -146,4 +182,24 @@ impl From<Transformation> for chaos_symphony_protocol::Transformation {
             position: value.position.into(),
         }
     }
+}
+
+/*
+ * ============================================================================
+ * Trust
+ * ============================================================================
+ */
+
+/// Trusted.
+#[derive(Debug, Clone, Event)]
+pub struct Trusted<T> {
+    /// Inner.
+    pub inner: T,
+}
+
+/// Untrusted.
+#[derive(Debug, Clone, Event)]
+pub struct Untrusted<T> {
+    /// Inner.
+    pub inner: T,
 }

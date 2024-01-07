@@ -23,8 +23,8 @@ pub mod network_disconnect;
 pub mod network_keep_alive;
 /// Replicate Entity Components.
 pub mod replicate_entity_components;
-/// Transformation.
-pub mod transformation;
+/// Replication.
+pub mod replication;
 /// Types.
 pub mod types;
 
@@ -35,6 +35,9 @@ pub struct DefaultPlugins {
 
     /// Network Authenticate.
     pub network_authenticate: network_authenticate::NetworkAuthenticatePlugin,
+
+    /// Replication Mode.
+    pub replication_mode: replication::ReplicationMode,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
@@ -57,7 +60,6 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             entity_identities::EntityIdentitiesPlugin,
             entity_identity::EntityIdentityPlugin,
             replicate_entity_components::ReplicateEntityComponentsPlugin,
-            transformation::TransformationPlugin,
         ));
 
         app.register_type::<bevy::utils::Uuid>()
@@ -69,5 +71,13 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::NetworkClientAuthority>()
             .register_type::<types::NetworkServerAuthority>()
             .register_type::<types::Transformation>();
+
+        // SPIKE IN PROGRESS
+        app.add_plugins(replication::ReplicationRequestPlugin);
+        app.add_plugins(replication::ReplicationPlugin::<
+            types::Transformation,
+            chaos_symphony_protocol::TransformationEvent,
+            chaos_symphony_protocol::TransformationEventPayload,
+        >::new(self.replication_mode));
     }
 }

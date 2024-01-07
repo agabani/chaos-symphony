@@ -4,8 +4,10 @@ use bevy::prelude::*;
 use bevy::utils::Uuid;
 use chaos_symphony_async::{Future, Poll, PollError};
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkSend};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::sync::mpsc::error::SendError;
+
+use crate::Identity;
 
 /*
  * ============================================================================
@@ -22,6 +24,9 @@ pub struct Message<T> {
     /// Endpoint.
     pub endpoint: String,
 
+    /// Header.
+    pub header: MessageHeader,
+
     /// Payload.
     pub payload: T,
 }
@@ -31,10 +36,19 @@ where
     T: DeserializeOwned,
 {
     fn from(value: chaos_symphony_network::Message) -> Self {
+        let header = match serde_json::from_str(&value.header) {
+            Ok(payload) => payload,
+            Err(error) => panic!("{error}\n{value:?}"),
+        };
+        let payload = match serde_json::from_str(&value.payload) {
+            Ok(payload) => payload,
+            Err(error) => panic!("{error}\n{value:?}"),
+        };
         Self {
             id: value.id.parse().unwrap(),
             endpoint: value.endpoint,
-            payload: serde_json::from_str(&value.payload).unwrap(),
+            header,
+            payload,
         }
     }
 }
@@ -47,9 +61,18 @@ where
         Self {
             id: value.id.to_string(),
             endpoint: value.endpoint,
+            header: serde_json::to_string(&value.header).unwrap(),
             payload: serde_json::to_string(&value.payload).unwrap(),
         }
     }
+}
+
+/// Message Header.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MessageHeader {
+    /// Source Identity.
+    pub source_identity: Option<Identity>,
 }
 
 /// Message ID.
@@ -129,6 +152,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }
@@ -164,6 +190,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }
@@ -204,6 +233,9 @@ where
         Message {
             id,
             endpoint: Self::ENDPOINT.to_string(),
+            header: MessageHeader {
+                source_identity: None,
+            },
             payload,
         }
     }

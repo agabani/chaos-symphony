@@ -10,6 +10,7 @@ use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network,
     network_authenticate::NetworkAuthenticatePlugin,
+    replication::ReplicationMode,
     types::{Identity, NetworkIdentity},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
@@ -32,6 +33,7 @@ async fn main() {
                 },
             },
         },
+        replication_mode: ReplicationMode::Client,
     })
     .add_systems(Update, route);
 
@@ -40,11 +42,11 @@ async fn main() {
 
 #[allow(clippy::match_single_binding)]
 #[allow(clippy::needless_pass_by_value)]
-fn route(mut commands: Commands, endpoints: Query<&NetworkEndpoint>) {
-    endpoints.for_each(|endpoint| {
+fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&NetworkIdentity>)>) {
+    endpoints.for_each(|(endpoint, identity)| {
         while let Ok(message) = endpoint.try_recv() {
             let NetworkRecv::NonBlocking { message } = message;
-            if let Some(message) = network::route(&mut commands, endpoint, message) {
+            if let Some(message) = network::route(&mut commands, endpoint, identity, message) {
                 match message.endpoint.as_str() {
                     endpoint => {
                         warn!(endpoint, "unhandled");

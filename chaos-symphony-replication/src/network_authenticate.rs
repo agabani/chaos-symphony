@@ -10,17 +10,22 @@ use chaos_symphony_protocol::{
 
 /// Network Authenticate Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct NetworkAuthenticatePlugin;
+pub struct NetworkAuthenticatePlugin {
+    /// Identity.
+    pub identity: NetworkIdentity,
+}
 
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, request);
+        app.insert_resource(self.identity.clone())
+            .add_systems(Update, request);
     }
 }
 
 #[allow(clippy::needless_pass_by_value)]
 fn request(
     mut commands: Commands,
+    identity: Res<NetworkIdentity>,
     messages: Query<(
         Entity,
         &NetworkEndpointId,
@@ -54,7 +59,8 @@ fn request(
         let response = AuthenticateResponse::message(
             message.inner.id,
             AuthenticateResponsePayload::Success {
-                identity: payload.identity.clone(),
+                client_identity: payload.identity.clone(),
+                server_identity: identity.inner.clone().into(),
             },
         );
         if let Err(error) = endpoint.try_send_non_blocking(response.into()) {

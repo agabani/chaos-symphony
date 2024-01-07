@@ -14,6 +14,15 @@
       "problemMatcher": []
     },
     {
+      "label": "just: run minimal",
+      "dependsOn": [
+        "just: run-replication",
+        "just: run-simulation",
+        "just: run-client"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "just: run-ai",
       "type": "shell",
       "command": "just run-ai",

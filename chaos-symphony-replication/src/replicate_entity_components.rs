@@ -1,11 +1,6 @@
-use std::marker::PhantomData;
-
 use bevy::prelude::*;
 
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    types::{EntityIdentity, NetworkIdentity, ReplicateEntity, Transformation},
-};
+use chaos_symphony_ecs::types::{NetworkIdentity, Trusted, Untrusted};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     ReplicateEntityComponentsRequest, ReplicateEntityComponentsResponse,
@@ -24,61 +19,36 @@ impl Plugin for ReplicateEntityComponentsPlugin {
 
 #[allow(clippy::needless_pass_by_value)]
 fn request(
-    mut commands: Commands,
-    messages: Query<(
-        Entity,
-        &NetworkEndpointId,
-        &NetworkMessage<ReplicateEntityComponentsRequest>,
-    )>,
+    mut reader: EventReader<Untrusted<ReplicateEntityComponentsRequest>>,
+    mut writer: EventWriter<Trusted<ReplicateEntityComponentsRequest>>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
-    entity_identities: Query<&EntityIdentity>,
 ) {
-    messages.for_each(|(entity, endpoint_id, request)| {
-        let span = error_span!("request", message_id =% request.inner.id);
-        let _guard = span.enter();
+    reader.read().for_each(|request| {
+        let Some(source_network_identity) = &request.inner.header.source_identity else {
+            error!("request does not have source network identity");
+            return;
+        };
 
-        commands.entity(entity).despawn();
-
-        let Some((endpoint, network_identity)) = endpoints
+        let Some((endpoint, _)) = endpoints
             .iter()
-            .find(|(endpoint, _)| endpoint.id() == endpoint_id.inner)
+            .find(|(_, network_identity)| network_identity.inner == *source_network_identity)
         else {
-            warn!("endpoint not found");
+            error!("network identity does not exist");
             return;
         };
-
-        let payload = &request.inner.payload;
-
-        let entity_identity = EntityIdentity {
-            inner: payload.entity_identity.clone().into(),
-        };
-
-        if !entity_identities.iter().any(|i| *i == entity_identity) {
-            let response = ReplicateEntityComponentsResponse::message(
-                request.inner.id,
-                ReplicateEntityComponentsResponsePayload::Failure,
-            );
-            if response.try_send(endpoint).is_err() {
-                warn!("failed to send response");
-            }
-            return;
-        }
 
         let response = ReplicateEntityComponentsResponse::message(
             request.inner.id,
             ReplicateEntityComponentsResponsePayload::Success,
         );
-        if response.try_send(endpoint).is_err() {
-            warn!("failed to send response");
-        }
 
-        // Spawn tasks for everything that should be replicated.
-        commands.spawn((
-            network_identity.clone(),
-            ReplicateEntity {
-                identity: entity_identity,
-                marker: PhantomData::<Transformation>,
-            },
-        ));
+        if response.try_send(endpoint).is_err() {
+            error!("failed to send event");
+            return;
+        };
+
+        writer.send(Trusted {
+            inner: request.inner.clone(),
+        });
     });
 }
