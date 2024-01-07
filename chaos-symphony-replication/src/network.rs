@@ -75,7 +75,7 @@ where
 {
     if let Some(identity) = identity {
         match identity.inner.noun.as_str() {
-            "client" | "simulation" => {
+            "ai" | "client" | "simulation" => {
                 // always overwrite source from untrusted endpoints.
                 message.header.source_identity = Some(identity.inner.clone().into());
             }
@@ -91,7 +91,7 @@ where
 
     match &message.header.source_identity {
         Some(identity) => match identity.noun.as_str() {
-            "client" => {
+            "ai" | "client" => {
                 commands.add(|world: &mut World| {
                     world.send_event(Untrusted { inner: message });
                 });
