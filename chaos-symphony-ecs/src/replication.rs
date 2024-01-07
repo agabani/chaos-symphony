@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::TransformationEvent;
+use chaos_symphony_protocol::{Event as _, ReplicateEntityComponentsRequest, TransformationEvent};
 
 use crate::types::{
     EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntityServerAuthority,
@@ -10,30 +10,46 @@ use crate::types::{
     Untrusted,
 };
 
+/// Replication Request Plugin.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
+pub struct ReplicationRequestPlugin;
+
+impl Plugin for ReplicationRequestPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<Trusted<ReplicateEntityComponentsRequest>>()
+            .add_event::<Untrusted<ReplicateEntityComponentsRequest>>();
+    }
+}
+
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
-pub struct ReplicationPlugin<E, P> {
+pub struct ReplicationPlugin<C, E, P> {
     mode: ReplicationMode,
+    _c: PhantomData<C>,
     _e: PhantomData<E>,
     _p: PhantomData<P>,
 }
 
-impl<E, P> ReplicationPlugin<E, P> {
+impl<C, E, P> ReplicationPlugin<C, E, P> {
     /// Creates a new [`ReplicationPlugin`].
     #[must_use]
     pub fn new(mode: ReplicationMode) -> Self {
         Self {
             mode,
+            _c: PhantomData,
             _e: PhantomData,
             _p: PhantomData,
         }
     }
 }
 
-impl<E, P> Plugin for ReplicationPlugin<E, P>
+impl<C, E, P> Plugin for ReplicationPlugin<C, E, P>
 where
-    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+    C: ReplicateComponent + Component,
+    C::Message: chaos_symphony_protocol::Event<P>,
+    E: ReplicateEvent + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
     P: Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
@@ -65,9 +81,11 @@ where
                         NetworkServerAuthority,
                     >,
                 );
+                app.add_systems(Update, replicate_trusted_component::<C, P>);
             }
             ReplicationMode::Simulation => {
                 app.add_systems(Update, send_trusted_event::<E, P>);
+                app.add_systems(Update, replicate_trusted_component::<C, P>);
             }
         };
     }
@@ -93,7 +111,7 @@ fn apply_trusted_event<E>(
     mut reader: EventReader<Trusted<E>>,
     query: Query<(&EntityIdentity, Entity)>,
 ) where
-    E: Replicate + Send + Sync + 'static,
+    E: ReplicateEvent + Send + Sync + 'static,
 {
     reader.read().for_each(|trusted| {
         let span = error_span!("event", message_id =%  trusted.inner.id());
@@ -116,7 +134,7 @@ fn send_trusted_event<E, P>(
     mut reader: EventReader<Trusted<E>>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
 ) where
-    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+    E: ReplicateEvent + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
 {
     reader.read().for_each(|event| {
         endpoints
@@ -139,7 +157,7 @@ fn send_untrusted_event<E, P, EA, NA>(
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity), With<NA>>,
     entities: Query<(&EA, &EntityIdentity)>,
 ) where
-    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+    E: ReplicateEvent + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
     EA: EntityAuthority + Component,
     NA: Component,
 {
@@ -153,7 +171,7 @@ fn send_untrusted_event<E, P, EA, NA>(
         };
 
         let Some((endpoint, _)) = endpoints.iter().find(|(_, network_identity)| {
-            network_identity.inner != *entity_replication_authority.identity()
+            network_identity.inner == *entity_replication_authority.identity()
         }) else {
             error!("network identity does not exist");
             return;
@@ -166,8 +184,62 @@ fn send_untrusted_event<E, P, EA, NA>(
     });
 }
 
-/// Replicate.
-pub trait Replicate {
+#[allow(clippy::needless_pass_by_value)]
+fn replicate_trusted_component<C, P>(
+    mut reader: EventReader<Trusted<ReplicateEntityComponentsRequest>>,
+    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    entities: Query<(&C, &EntityIdentity)>,
+) where
+    C: ReplicateComponent + Component,
+    C::Message: chaos_symphony_protocol::Event<P>,
+{
+    reader.read().for_each(|request| {
+        let Some(source_network_identity) = &request.inner.header.source_identity else {
+            error!("request does not have source network identity");
+            return;
+        };
+
+        let Some((endpoint, _)) = endpoints
+            .iter()
+            .find(|(_, network_identity)| network_identity.inner == *source_network_identity)
+        else {
+            error!("network identity does not exist");
+            return;
+        };
+
+        let Some((component, _)) = entities.iter().find(|(_, entity_identity)| {
+            entity_identity.inner == request.inner.payload.entity_identity
+        }) else {
+            error!("entity identity component does not exist");
+            return;
+        };
+
+        let message = component.to_message();
+        if message.try_send(endpoint).is_err() {
+            error!("failed to send event");
+        };
+    });
+}
+
+/// Replicate Component.
+pub trait ReplicateComponent {
+    /// Message.
+    type Message;
+
+    /// To Message.
+    fn to_message(&self) -> Self::Message;
+}
+
+impl ReplicateComponent for Transformation {
+    type Message = TransformationEvent;
+
+    fn to_message(&self) -> Self::Message {
+        todo!()
+    }
+}
+
+/// Replicate Event.
+pub trait ReplicateEvent {
     /// Entity Identity.
     fn entity_identity(&self) -> &chaos_symphony_protocol::Identity;
 
@@ -181,7 +253,7 @@ pub trait Replicate {
     fn source_identity(&self) -> &chaos_symphony_protocol::Identity;
 }
 
-impl Replicate for TransformationEvent {
+impl ReplicateEvent for TransformationEvent {
     fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
         &self.payload.entity_identity
     }

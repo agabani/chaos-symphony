@@ -76,7 +76,9 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::Transformation>();
 
         // SPIKE IN PROGRESS
+        app.add_plugins(replication::ReplicationRequestPlugin);
         app.add_plugins(replication::ReplicationPlugin::<
+            types::Transformation,
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
         >::new(self.replication_mode));

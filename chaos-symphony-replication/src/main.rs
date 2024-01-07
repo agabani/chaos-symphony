@@ -63,7 +63,9 @@ async fn main() {
     .add_systems(Update, (accepted, route));
 
     // SPIKE IN PROGRESS
+    app.add_plugins(replication::ReplicationRequestPlugin);
     app.add_plugins(replication::ReplicationPlugin::<
+        Transformation,
         chaos_symphony_protocol::TransformationEvent,
         chaos_symphony_protocol::TransformationEventPayload,
     >::new(replication::ReplicationMode::Replication));
