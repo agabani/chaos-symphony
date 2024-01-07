@@ -4,7 +4,11 @@ use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::TransformationEvent;
 
-use crate::types::{EntityIdentity, NetworkIdentity, Transformation, Trusted, Untrusted};
+use crate::types::{
+    EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntityServerAuthority,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, Transformation, Trusted,
+    Untrusted,
+};
 
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -38,9 +42,29 @@ where
         app.add_systems(Update, apply_trusted_event::<E>);
 
         match self.mode {
-            ReplicationMode::Client => {}
+            ReplicationMode::Client => {
+                app.add_systems(
+                    Update,
+                    send_untrusted_event::<
+                        E,
+                        P,
+                        EntityReplicationAuthority,
+                        NetworkReplicationAuthority,
+                    >,
+                );
+            }
             ReplicationMode::Replication => {
                 app.add_systems(Update, send_trusted_event::<E, P>);
+                app.add_systems(
+                    Update,
+                    send_untrusted_event::<
+                        //
+                        E,
+                        P,
+                        EntityServerAuthority,
+                        NetworkServerAuthority,
+                    >,
+                );
             }
             ReplicationMode::Simulation => {
                 app.add_systems(Update, send_trusted_event::<E, P>);
@@ -87,6 +111,7 @@ fn apply_trusted_event<E>(
     });
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn send_trusted_event<E, P>(
     mut reader: EventReader<Trusted<E>>,
     endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
@@ -105,6 +130,39 @@ fn send_trusted_event<E, P>(
                     error!("failed to send event");
                 };
             });
+    });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn send_untrusted_event<E, P, EA, NA>(
+    mut reader: EventReader<Untrusted<E>>,
+    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity), With<NA>>,
+    entities: Query<(&EA, &EntityIdentity)>,
+) where
+    E: Replicate + Clone + Send + Sync + 'static + chaos_symphony_protocol::Event<P>,
+    EA: EntityAuthority + Component,
+    NA: Component,
+{
+    reader.read().for_each(|event| {
+        let Some((entity_replication_authority, _)) = entities
+            .iter()
+            .find(|(_, entity_identity)| entity_identity.inner == *event.inner.entity_identity())
+        else {
+            error!("entity identity does not exist");
+            return;
+        };
+
+        let Some((endpoint, _)) = endpoints.iter().find(|(_, network_identity)| {
+            network_identity.inner != *entity_replication_authority.identity()
+        }) else {
+            error!("network identity does not exist");
+            return;
+        };
+
+        let message = event.inner.clone();
+        if message.try_send(endpoint).is_err() {
+            error!("failed to send event");
+        };
     });
 }
 
@@ -138,6 +196,6 @@ impl Replicate for TransformationEvent {
     }
 
     fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
-        &self.header.source_identity.as_ref().unwrap()
+        self.header.source_identity.as_ref().unwrap()
     }
 }

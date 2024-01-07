@@ -65,11 +65,23 @@ pub struct EntityIdentity {
     pub inner: Identity,
 }
 
+/// Entity Authority.
+pub trait EntityAuthority {
+    /// Identity.
+    fn identity(&self) -> &Identity;
+}
+
 /// Entity Client Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
 pub struct EntityClientAuthority {
     /// Identity.
     pub identity: Identity,
+}
+
+impl EntityAuthority for EntityClientAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
 }
 
 /// Entity Replication Authority.
@@ -79,11 +91,23 @@ pub struct EntityReplicationAuthority {
     pub identity: Identity,
 }
 
+impl EntityAuthority for EntityReplicationAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
+}
+
 /// Entity Server Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
 pub struct EntityServerAuthority {
     /// Identity.
     pub identity: Identity,
+}
+
+impl EntityAuthority for EntityServerAuthority {
+    fn identity(&self) -> &Identity {
+        &self.identity
+    }
 }
 
 /*
