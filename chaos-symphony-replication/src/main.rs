@@ -17,7 +17,6 @@ use chaos_symphony_ecs::{
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     replication,
-    transformation::TransformationPlugin,
     types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
@@ -57,7 +56,6 @@ async fn main() {
         EntityIdentitiesPlugin,
         EntityIdentityPlugin,
         ReplicateEntityComponentsPlugin,
-        TransformationPlugin,
     ))
     // ...
     .add_systems(Update, (accepted, route));

@@ -36,11 +36,19 @@ where
     T: DeserializeOwned,
 {
     fn from(value: chaos_symphony_network::Message) -> Self {
+        let header = match serde_json::from_str(&value.header) {
+            Ok(payload) => payload,
+            Err(error) => panic!("{error}\n{value:?}"),
+        };
+        let payload = match serde_json::from_str(&value.payload) {
+            Ok(payload) => payload,
+            Err(error) => panic!("{error}\n{value:?}"),
+        };
         Self {
             id: value.id.parse().unwrap(),
             endpoint: value.endpoint,
-            header: serde_json::from_str(&value.header).unwrap(),
-            payload: serde_json::from_str(&value.payload).unwrap(),
+            header,
+            payload,
         }
     }
 }

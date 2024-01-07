@@ -2,7 +2,9 @@ use std::marker::PhantomData;
 
 use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{Event as _, ReplicateEntityComponentsRequest, TransformationEvent};
+use chaos_symphony_protocol::{
+    Event as _, ReplicateEntityComponentsRequest, TransformationEvent, TransformationEventPayload,
+};
 
 use crate::types::{
     EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntityServerAuthority,
@@ -207,14 +209,14 @@ fn replicate_trusted_component<C, P>(
             return;
         };
 
-        let Some((component, _)) = entities.iter().find(|(_, entity_identity)| {
+        let Some((component, entity_identity)) = entities.iter().find(|(_, entity_identity)| {
             entity_identity.inner == request.inner.payload.entity_identity
         }) else {
             error!("entity identity component does not exist");
             return;
         };
 
-        let message = component.to_message();
+        let message = component.to_message(entity_identity);
         if message.try_send(endpoint).is_err() {
             error!("failed to send event");
         };
@@ -227,14 +229,20 @@ pub trait ReplicateComponent {
     type Message;
 
     /// To Message.
-    fn to_message(&self) -> Self::Message;
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message;
 }
 
 impl ReplicateComponent for Transformation {
     type Message = TransformationEvent;
 
-    fn to_message(&self) -> Self::Message {
-        todo!()
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
+        TransformationEvent::message(
+            Uuid::new_v4(),
+            TransformationEventPayload {
+                entity_identity: entity_identity.inner.clone().into(),
+                transformation: (*self).into(),
+            },
+        )
     }
 }
 

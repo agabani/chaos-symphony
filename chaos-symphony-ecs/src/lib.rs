@@ -25,8 +25,6 @@ pub mod network_keep_alive;
 pub mod replicate_entity_components;
 /// Replication.
 pub mod replication;
-/// Transformation.
-pub mod transformation;
 /// Types.
 pub mod types;
 
@@ -62,7 +60,6 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             entity_identities::EntityIdentitiesPlugin,
             entity_identity::EntityIdentityPlugin,
             replicate_entity_components::ReplicateEntityComponentsPlugin,
-            transformation::TransformationPlugin,
         ));
 
         app.register_type::<bevy::utils::Uuid>()

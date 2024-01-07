@@ -54,14 +54,11 @@ pub fn route(
         }
         PingEvent::ENDPOINT => None,
         ReplicateEntityComponentsRequest::ENDPOINT => {
-            commands.spawn((
-                NetworkEndpointId {
-                    inner: endpoint.id(),
-                },
-                NetworkMessage {
-                    inner: ReplicateEntityComponentsRequest::from(message),
-                },
-            ));
+            dispatch(
+                commands,
+                identity,
+                ReplicateEntityComponentsRequest::from(message),
+            );
             None
         }
         TransformationEvent::ENDPOINT => {

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use bevy::{
     math::{DQuat, DVec3},
     prelude::*,
@@ -143,16 +141,6 @@ pub struct NetworkServerAuthority;
  * Replicate
  * ============================================================================
  */
-
-/// Replicate Entity.
-#[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
-pub struct ReplicateEntity<T> {
-    /// Identity.
-    pub identity: EntityIdentity,
-
-    /// Marker
-    pub marker: PhantomData<T>,
-}
 
 /// Replicate Sink.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
