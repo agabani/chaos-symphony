@@ -27,14 +27,12 @@ pub fn route(
             None
         }
         EntityIdentitiesRequest::ENDPOINT => {
-            commands.spawn((
-                NetworkEndpointId {
-                    inner: endpoint.id(),
-                },
-                NetworkMessage {
-                    inner: EntityIdentitiesRequest::from(message),
-                },
-            ));
+            dispatch(
+                commands,
+                endpoint,
+                identity,
+                EntityIdentitiesRequest::from(message),
+            );
             None
         }
         EntityIdentityEvent::ENDPOINT => {
