@@ -1,8 +1,5 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    types::{EntityIdentity, NetworkIdentity},
-};
+use chaos_symphony_ecs::types::{EntityIdentity, Untrusted};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload,
@@ -15,30 +12,29 @@ pub struct EntityIdentitiesPlugin;
 
 impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, request);
+        app.add_event::<Untrusted<EntityIdentitiesRequest>>()
+            .add_systems(Update, request);
     }
 }
 
 #[allow(clippy::needless_pass_by_value)]
 fn request(
-    mut commands: Commands,
-    messages: Query<(
-        Entity,
-        &NetworkEndpointId,
-        &NetworkMessage<EntityIdentitiesRequest>,
-    )>,
-    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    mut reader: EventReader<Untrusted<EntityIdentitiesRequest>>,
+    endpoints: Query<&NetworkEndpoint>,
     identities: Query<&EntityIdentity>,
 ) {
-    messages.for_each(|(entity, endpoint_id, request)| {
+    reader.read().for_each(|request| {
         let span = error_span!("request", message_id =% request.inner.id);
         let _guard = span.enter();
 
-        commands.entity(entity).despawn();
+        let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
+            error!("request does not have source endpoint id");
+            return;
+        };
 
-        let Some((endpoint, _identity)) = endpoints
+        let Some(endpoint) = endpoints
             .iter()
-            .find(|(endpoint, _)| endpoint.id() == endpoint_id.inner)
+            .find(|endpoint| endpoint.id() == *source_endpoint_id)
         else {
             warn!("endpoint not found");
             return;
