@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use chaos_symphony_ecs::types::{NetworkIdentity, Trusted, Untrusted};
+use chaos_symphony_ecs::types::{Trusted, Untrusted};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     ReplicateEntityComponentsRequest, ReplicateEntityComponentsResponse,
@@ -21,19 +21,19 @@ impl Plugin for ReplicateEntityComponentsPlugin {
 fn request(
     mut reader: EventReader<Untrusted<ReplicateEntityComponentsRequest>>,
     mut writer: EventWriter<Trusted<ReplicateEntityComponentsRequest>>,
-    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    endpoints: Query<&NetworkEndpoint>,
 ) {
     reader.read().for_each(|request| {
-        let Some(source_network_identity) = &request.inner.header.source_identity else {
-            error!("request does not have source network identity");
+        let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
+            error!("request does not have source network endpoint");
             return;
         };
 
-        let Some((endpoint, _)) = endpoints
+        let Some(endpoint) = endpoints
             .iter()
-            .find(|(_, network_identity)| network_identity.inner == *source_network_identity)
+            .find(|endpoint| endpoint.id() == *source_endpoint_id)
         else {
-            error!("network identity does not exist");
+            error!("network endpoint does not exist");
             return;
         };
 

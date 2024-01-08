@@ -71,6 +71,9 @@ where
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MessageHeader {
+    /// Source Endpoint ID.
+    pub source_endpoint_id: Option<usize>,
+
     /// Source Identity.
     pub source_identity: Option<Identity>,
 }
@@ -153,6 +156,7 @@ where
             id,
             endpoint: Self::ENDPOINT.to_string(),
             header: MessageHeader {
+                source_endpoint_id: None,
                 source_identity: None,
             },
             payload,
@@ -191,6 +195,7 @@ where
             id,
             endpoint: Self::ENDPOINT.to_string(),
             header: MessageHeader {
+                source_endpoint_id: None,
                 source_identity: None,
             },
             payload,
@@ -234,6 +239,7 @@ where
             id,
             endpoint: Self::ENDPOINT.to_string(),
             header: MessageHeader {
+                source_endpoint_id: None,
                 source_identity: None,
             },
             payload,

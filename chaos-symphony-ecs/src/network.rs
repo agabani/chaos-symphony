@@ -42,20 +42,32 @@ pub fn route(
             None
         }
         TransformationEvent::ENDPOINT => {
-            dispatch(commands, identity, TransformationEvent::from(message));
+            dispatch(
+                commands,
+                endpoint,
+                identity,
+                TransformationEvent::from(message),
+            );
             None
         }
         _ => Some(message),
     }
 }
 
-fn dispatch<T>(commands: &mut Commands, identity: Option<&NetworkIdentity>, mut message: Message<T>)
-where
+/// Dispatch.
+pub fn dispatch<T>(
+    commands: &mut Commands,
+    endpoint: &NetworkEndpoint,
+    identity: Option<&NetworkIdentity>,
+    mut message: Message<T>,
+) where
     T: Send + Sync + 'static + Debug,
 {
+    message.header.source_endpoint_id = Some(endpoint.id());
+
     if let Some(identity) = identity {
         match identity.inner.noun.as_str() {
-            "client" | "simulation" => {
+            "ai" | "client" | "simulation" => {
                 // always overwrite source from untrusted endpoints.
                 message.header.source_identity = Some(identity.inner.clone().into());
             }
@@ -71,7 +83,7 @@ where
 
     match &message.header.source_identity {
         Some(identity) => match identity.noun.as_str() {
-            "client" => {
+            "ai" | "client" => {
                 commands.add(|world: &mut World| {
                     world.send_event(Untrusted { inner: message });
                 });

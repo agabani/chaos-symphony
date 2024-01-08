@@ -189,23 +189,26 @@ fn send_untrusted_event<E, P, EA, NA>(
 #[allow(clippy::needless_pass_by_value)]
 fn replicate_trusted_component<C, P>(
     mut reader: EventReader<Trusted<ReplicateEntityComponentsRequest>>,
-    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity)>,
+    endpoints: Query<&NetworkEndpoint>,
     entities: Query<(&C, &EntityIdentity)>,
 ) where
     C: ReplicateComponent + Component,
     C::Message: chaos_symphony_protocol::Event<P>,
 {
     reader.read().for_each(|request| {
-        let Some(source_network_identity) = &request.inner.header.source_identity else {
-            error!("request does not have source network identity");
+        let span = error_span!("replicate_trusted_component", request =? request.inner);
+        let _guard = span.enter();
+
+        let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
+            error!("request does not have source endpoint id");
             return;
         };
 
-        let Some((endpoint, _)) = endpoints
+        let Some(endpoint) = endpoints
             .iter()
-            .find(|(_, network_identity)| network_identity.inner == *source_network_identity)
+            .find(|endpoint| endpoint.id() == *source_endpoint_id)
         else {
-            error!("network identity does not exist");
+            error!("network endpoint does not exist");
             return;
         };
 
