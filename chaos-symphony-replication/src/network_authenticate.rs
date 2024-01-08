@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::{
-    network::{NetworkEndpointId, NetworkMessage},
-    types::NetworkIdentity,
-};
+use chaos_symphony_ecs::types::{NetworkIdentity, Untrusted};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     AuthenticateRequest, AuthenticateResponse, AuthenticateResponsePayload, Response as _,
@@ -17,7 +14,8 @@ pub struct NetworkAuthenticatePlugin {
 
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(self.identity.clone())
+        app.add_event::<Untrusted<AuthenticateRequest>>()
+            .insert_resource(self.identity.clone())
             .add_systems(Update, request);
     }
 }
@@ -26,29 +24,28 @@ impl Plugin for NetworkAuthenticatePlugin {
 fn request(
     mut commands: Commands,
     identity: Res<NetworkIdentity>,
-    messages: Query<(
-        Entity,
-        &NetworkEndpointId,
-        &NetworkMessage<AuthenticateRequest>,
-    )>,
+    mut reader: EventReader<Untrusted<AuthenticateRequest>>,
     endpoints: Query<(Entity, &NetworkEndpoint)>,
 ) {
-    messages.for_each(|(entity, endpoint_id, message)| {
-        let span = error_span!("request", message_id =% message.inner.id);
+    reader.read().for_each(|request| {
+        let span = error_span!("request", message_id =% request.inner.id);
         let _guard = span.enter();
 
-        commands.entity(entity).despawn();
+        let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
+            error!("request does not have source endpoint id");
+            return;
+        };
 
         let Some((entity, endpoint)) = endpoints
             .iter()
-            .find(|(_, endpoint)| endpoint.id() == endpoint_id.inner)
+            .find(|(_, endpoint)| endpoint.id() == *source_endpoint_id)
         else {
             warn!("endpoint not found");
             return;
         };
 
         let mut commands = commands.entity(entity);
-        let payload = &message.inner.payload;
+        let payload = &request.inner.payload;
 
         let network_identity = NetworkIdentity {
             inner: payload.identity.clone().into(),
@@ -57,7 +54,7 @@ fn request(
         commands.insert(network_identity);
 
         let response = AuthenticateResponse::message(
-            message.inner.id,
+            request.inner.id,
             AuthenticateResponsePayload::Success {
                 client_identity: payload.identity.clone(),
                 server_identity: identity.inner.clone().into(),
