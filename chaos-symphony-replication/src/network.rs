@@ -18,14 +18,12 @@ pub fn route(
 ) -> Option<chaos_symphony_network::Message> {
     match message.endpoint.as_str() {
         AuthenticateRequest::ENDPOINT => {
-            commands.spawn((
-                NetworkEndpointId {
-                    inner: endpoint.id(),
-                },
-                NetworkMessage {
-                    inner: AuthenticateRequest::from(message),
-                },
-            ));
+            dispatch(
+                commands,
+                endpoint,
+                identity,
+                AuthenticateRequest::from(message),
+            );
             None
         }
         EntityIdentitiesRequest::ENDPOINT => {

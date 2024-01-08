@@ -79,6 +79,8 @@ pub fn dispatch<T>(
             }
             noun => todo!("{noun}"),
         };
+    } else {
+        message.header.source_identity = None;
     }
 
     match &message.header.source_identity {
@@ -95,6 +97,10 @@ pub fn dispatch<T>(
             }
             noun => todo!("{noun}"),
         },
-        None => {}
+        None => {
+            commands.add(|world: &mut World| {
+                world.send_event(Untrusted { inner: message });
+            });
+        }
     }
 }

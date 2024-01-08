@@ -69,6 +69,7 @@ async fn main() {
     >::new(replication::ReplicationMode::Replication));
 
     app.register_type::<EntityIdentity>();
+    app.register_type::<NetworkIdentity>();
     app.register_type::<Transformation>();
 
     app.run();
