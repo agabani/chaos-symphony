@@ -4,7 +4,6 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
-mod network;
 mod network_authenticate;
 mod replicate_entity_components;
 
@@ -16,10 +15,11 @@ use chaos_symphony_ecs::{
     entity_identity::EntityIdentityPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
+    network_router::NetworkRouter,
     replication,
     types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
-use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
@@ -51,6 +51,7 @@ async fn main() {
         },
         NetworkAuthorityPlugin,
         NetworkDisconnectPlugin,
+        NetworkRouter,
     ))
     // Default Plugins
     .add_plugins((
@@ -58,8 +59,8 @@ async fn main() {
         EntityIdentityPlugin::new(mode),
         ReplicateEntityComponentsPlugin,
     ))
+    .add_systems(Update, accepted);
     // ...
-    .add_systems(Update, (accepted, route));
 
     // SPIKE IN PROGRESS
     app.add_plugins(replication::ReplicationRequestPlugin);
@@ -99,21 +100,4 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
             }
         };
     }
-}
-
-#[allow(clippy::match_single_binding)]
-#[allow(clippy::needless_pass_by_value)]
-fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&NetworkIdentity>)>) {
-    endpoints.for_each(|(endpoint, identity)| {
-        while let Ok(message) = endpoint.try_recv() {
-            let NetworkRecv::NonBlocking { message } = message;
-            if let Some(message) = network::route(&mut commands, endpoint, identity, message) {
-                match message.endpoint.as_str() {
-                    endpoint => {
-                        warn!(endpoint, "unhandled");
-                    }
-                }
-            }
-        }
-    });
 }

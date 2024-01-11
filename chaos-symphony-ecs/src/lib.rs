@@ -9,8 +9,6 @@ pub mod bevy_config;
 pub mod entity_identities;
 /// Entity Identity.
 pub mod entity_identity;
-/// Network.
-pub mod network;
 /// Network Authenticate.
 pub mod network_authenticate;
 /// Network Authority.
@@ -21,6 +19,8 @@ pub mod network_connect;
 pub mod network_disconnect;
 /// Network Keep Alive.
 pub mod network_keep_alive;
+/// Network Router.
+pub mod network_router;
 /// Replicate Entity Components.
 pub mod replicate_entity_components;
 /// Replication.
@@ -54,6 +54,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             network_connect::NetworkConnectPlugin,
             network_disconnect::NetworkDisconnectPlugin,
             network_keep_alive::NetworkKeepAlivePlugin,
+            network_router::NetworkRouter,
         ));
 
         app.add_plugins((
