@@ -4,7 +4,6 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
-mod entity_identity;
 mod network;
 mod network_authenticate;
 mod replicate_entity_components;
@@ -14,6 +13,7 @@ use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
+    entity_identity::EntityIdentityPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     replication,
@@ -21,13 +21,14 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
-use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
+
+    let mode = replication::ReplicationMode::Replication;
 
     app.add_plugins(BevyConfigPlugin {
         headless: false,
@@ -54,7 +55,7 @@ async fn main() {
     // Default Plugins
     .add_plugins((
         EntityIdentitiesPlugin,
-        EntityIdentityPlugin,
+        EntityIdentityPlugin::new(mode),
         ReplicateEntityComponentsPlugin,
     ))
     // ...
@@ -66,7 +67,7 @@ async fn main() {
         Transformation,
         chaos_symphony_protocol::TransformationEvent,
         chaos_symphony_protocol::TransformationEventPayload,
-    >::new(replication::ReplicationMode::Replication));
+    >::new(mode));
 
     app.register_type::<EntityIdentity>();
     app.register_type::<NetworkIdentity>();

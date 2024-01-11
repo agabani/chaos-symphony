@@ -58,7 +58,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
 
         app.add_plugins((
             entity_identities::EntityIdentitiesPlugin,
-            entity_identity::EntityIdentityPlugin,
+            entity_identity::EntityIdentityPlugin::new(self.replication_mode),
             replicate_entity_components::ReplicateEntityComponentsPlugin,
         ));
 

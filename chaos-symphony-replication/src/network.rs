@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use chaos_symphony_ecs::{
-    network::{dispatch, NetworkEndpointId, NetworkMessage},
-    types::NetworkIdentity,
-};
+use chaos_symphony_ecs::{network::dispatch, types::NetworkIdentity};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     AuthenticateRequest, EntityIdentitiesRequest, EntityIdentityEvent, Event as _, PingEvent,
@@ -36,14 +33,12 @@ pub fn route(
             None
         }
         EntityIdentityEvent::ENDPOINT => {
-            commands.spawn((
-                NetworkEndpointId {
-                    inner: endpoint.id(),
-                },
-                NetworkMessage {
-                    inner: EntityIdentityEvent::from(message),
-                },
-            ));
+            dispatch(
+                commands,
+                endpoint,
+                identity,
+                EntityIdentityEvent::from(message),
+            );
             None
         }
         PingEvent::ENDPOINT => None,
