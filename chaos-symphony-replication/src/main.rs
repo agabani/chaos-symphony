@@ -4,8 +4,6 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
-mod entity_identity;
-mod network;
 mod network_authenticate;
 mod replicate_entity_components;
 
@@ -14,20 +12,23 @@ use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
+    entity_identity::EntityIdentityPlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
+    network_router::NetworkRouter,
     replication,
     types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
 };
-use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkPlugin, NetworkRecv, NetworkServer};
+use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
 use entity_identities::EntityIdentitiesPlugin;
-use entity_identity::EntityIdentityPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
+
+    let mode = replication::ReplicationMode::Replication;
 
     app.add_plugins(BevyConfigPlugin {
         headless: false,
@@ -50,15 +51,16 @@ async fn main() {
         },
         NetworkAuthorityPlugin,
         NetworkDisconnectPlugin,
+        NetworkRouter,
     ))
     // Default Plugins
     .add_plugins((
         EntityIdentitiesPlugin,
-        EntityIdentityPlugin,
+        EntityIdentityPlugin::new(mode),
         ReplicateEntityComponentsPlugin,
     ))
+    .add_systems(Update, accepted);
     // ...
-    .add_systems(Update, (accepted, route));
 
     // SPIKE IN PROGRESS
     app.add_plugins(replication::ReplicationRequestPlugin);
@@ -66,7 +68,7 @@ async fn main() {
         Transformation,
         chaos_symphony_protocol::TransformationEvent,
         chaos_symphony_protocol::TransformationEventPayload,
-    >::new(replication::ReplicationMode::Replication));
+    >::new(mode));
 
     app.register_type::<EntityIdentity>();
     app.register_type::<NetworkIdentity>();
@@ -98,21 +100,4 @@ fn accepted(mut commands: Commands, server: Res<NetworkServer>) {
             }
         };
     }
-}
-
-#[allow(clippy::match_single_binding)]
-#[allow(clippy::needless_pass_by_value)]
-fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&NetworkIdentity>)>) {
-    endpoints.for_each(|(endpoint, identity)| {
-        while let Ok(message) = endpoint.try_recv() {
-            let NetworkRecv::NonBlocking { message } = message;
-            if let Some(message) = network::route(&mut commands, endpoint, identity, message) {
-                match message.endpoint.as_str() {
-                    endpoint => {
-                        warn!(endpoint, "unhandled");
-                    }
-                }
-            }
-        }
-    });
 }
