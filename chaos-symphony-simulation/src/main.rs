@@ -18,6 +18,8 @@ use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEve
 async fn main() {
     let mut app = App::new();
 
+    let role = Role::Simulation;
+
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
             headless: false,
@@ -31,8 +33,9 @@ async fn main() {
                     noun: "simulation".to_string(),
                 },
             },
+            role,
         },
-        role: Role::Simulation,
+        role,
     })
     .add_systems(
         Update,

@@ -4,7 +4,6 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
-mod network_authenticate;
 mod replicate_entity_components;
 
 use std::{str::FromStr as _, sync::mpsc::TryRecvError};
@@ -13,6 +12,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     entity_identity::EntityIdentityPlugin,
+    network_authenticate::NetworkAuthenticatePlugin,
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_router::NetworkRouter,
@@ -22,7 +22,6 @@ use chaos_symphony_ecs::{
 use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
 use chaos_symphony_protocol::{TransformationEvent, TransformationEventPayload};
 use entity_identities::EntityIdentitiesPlugin;
-use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
 #[tokio::main]
@@ -49,6 +48,7 @@ async fn main() {
                     noun: "replication".to_string(),
                 },
             },
+            role,
         },
         NetworkAuthorityPlugin,
         NetworkDisconnectPlugin,

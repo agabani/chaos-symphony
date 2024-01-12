@@ -18,6 +18,8 @@ use chaos_symphony_ecs::{
 async fn main() {
     let mut app = App::new();
 
+    let role = Role::Client;
+
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
             headless: false,
@@ -31,8 +33,9 @@ async fn main() {
                     noun: "client".to_string(),
                 },
             },
+            role,
         },
-        role: Role::Client,
+        role,
     })
     .add_plugins(transformation::TransformationPlugin)
     .add_systems(Startup, camera);
