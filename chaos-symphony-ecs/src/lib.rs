@@ -33,8 +33,8 @@ pub struct DefaultPlugins {
     /// Bevy Config.
     pub bevy_config: bevy_config::BevyConfigPlugin,
 
-    /// Network Authenticate.
-    pub network_authenticate: network_authenticate::NetworkAuthenticatePlugin,
+    /// Network Identity.
+    pub network_identity: types::NetworkIdentity,
 
     /// Role.
     pub role: types::Role,
@@ -55,7 +55,10 @@ impl bevy::prelude::Plugin for DefaultPlugins {
                     types::Role::Replication => true,
                 },
             },
-            self.network_authenticate.clone(),
+            network_authenticate::NetworkAuthenticatePlugin::new(
+                self.network_identity.clone(),
+                self.role,
+            ),
             network_authority::NetworkAuthorityPlugin,
             network_disconnect::NetworkDisconnectPlugin,
             network_router::NetworkRouter,
