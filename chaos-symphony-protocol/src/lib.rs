@@ -4,6 +4,7 @@
 //! Chaos Symphony Protocol
 
 mod authenticate;
+mod entity_authority;
 mod entity_identities;
 mod entity_identity;
 mod message;
@@ -13,6 +14,7 @@ mod transformation;
 mod types;
 
 pub use authenticate::*;
+pub use entity_authority::*;
 pub use entity_identities::*;
 pub use entity_identity::*;
 pub use message::*;

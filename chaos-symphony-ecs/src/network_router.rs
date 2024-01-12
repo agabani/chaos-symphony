@@ -3,8 +3,9 @@ use std::fmt::Debug;
 use bevy::prelude::*;
 use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 use chaos_symphony_protocol::{
-    AuthenticateRequest, EntityIdentitiesRequest, EntityIdentityEvent, Event as _, Message,
-    PingEvent, ReplicateEntityComponentsRequest, Request as _, TransformationEvent,
+    AuthenticateRequest, EntityClientAuthorityEvent, EntityIdentitiesRequest, EntityIdentityEvent,
+    EntityReplicationAuthorityEvent, EntitySimulationAuthorityEvent, Event, Message, PingEvent,
+    ReplicateEntityComponentsRequest, Request as _, TransformationEvent,
 };
 
 use crate::types::{NetworkIdentity, Trusted, Untrusted};
@@ -30,6 +31,30 @@ fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&Net
                         endpoint,
                         identity,
                         AuthenticateRequest::from(message),
+                    );
+                }
+                EntityClientAuthorityEvent::ENDPOINT => {
+                    dispatch(
+                        &mut commands,
+                        endpoint,
+                        identity,
+                        EntityClientAuthorityEvent::from(message),
+                    );
+                }
+                EntityReplicationAuthorityEvent::ENDPOINT => {
+                    dispatch(
+                        &mut commands,
+                        endpoint,
+                        identity,
+                        EntityReplicationAuthorityEvent::from(message),
+                    );
+                }
+                EntitySimulationAuthorityEvent::ENDPOINT => {
+                    dispatch(
+                        &mut commands,
+                        endpoint,
+                        identity,
+                        EntitySimulationAuthorityEvent::from(message),
                     );
                 }
                 EntityIdentitiesRequest::ENDPOINT => {

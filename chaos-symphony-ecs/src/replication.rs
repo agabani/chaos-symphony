@@ -7,7 +7,7 @@ use chaos_symphony_protocol::{
 };
 
 use crate::types::{
-    EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntityServerAuthority,
+    self, EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
     NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, Role, Transformation,
     Trusted, Untrusted,
 };
@@ -67,7 +67,7 @@ where
                         //
                         E,
                         P,
-                        EntityServerAuthority,
+                        EntitySimulationAuthority,
                         NetworkServerAuthority,
                     >,
                 );
@@ -249,6 +249,111 @@ impl ReplicateEvent for TransformationEvent {
 
     fn insert_bundle(&self, mut commands: EntityCommands) {
         let component: Transformation = self.payload.transformation.into();
+        commands.insert(component);
+    }
+
+    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
+        self.header.source_identity.as_ref().unwrap()
+    }
+}
+
+impl ReplicateComponent for types::EntityClientAuthority {
+    type Message = chaos_symphony_protocol::EntityClientAuthorityEvent;
+
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
+        chaos_symphony_protocol::EntityClientAuthorityEvent::message(
+            Uuid::new_v4(),
+            chaos_symphony_protocol::EntityClientAuthorityEventPayload {
+                authority_identity: self.identity.clone().into(),
+                entity_identity: entity_identity.inner.clone().into(),
+            },
+        )
+    }
+}
+
+impl ReplicateEvent for chaos_symphony_protocol::EntityClientAuthorityEvent {
+    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
+        &self.payload.entity_identity
+    }
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
+    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
+        let component = types::EntityClientAuthority {
+            identity: self.payload.authority_identity.clone().into(),
+        };
+        commands.insert(component);
+    }
+
+    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
+        self.header.source_identity.as_ref().unwrap()
+    }
+}
+
+impl ReplicateComponent for types::EntitySimulationAuthority {
+    type Message = chaos_symphony_protocol::EntitySimulationAuthorityEvent;
+
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
+        chaos_symphony_protocol::EntitySimulationAuthorityEvent::message(
+            Uuid::new_v4(),
+            chaos_symphony_protocol::EntitySimulationAuthorityEventPayload {
+                authority_identity: self.identity.clone().into(),
+                entity_identity: entity_identity.inner.clone().into(),
+            },
+        )
+    }
+}
+
+impl ReplicateEvent for chaos_symphony_protocol::EntitySimulationAuthorityEvent {
+    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
+        &self.payload.entity_identity
+    }
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
+    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
+        let component = types::EntitySimulationAuthority {
+            identity: self.payload.authority_identity.clone().into(),
+        };
+        commands.insert(component);
+    }
+
+    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
+        self.header.source_identity.as_ref().unwrap()
+    }
+}
+
+impl ReplicateComponent for types::EntityReplicationAuthority {
+    type Message = chaos_symphony_protocol::EntityReplicationAuthorityEvent;
+
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
+        chaos_symphony_protocol::EntityReplicationAuthorityEvent::message(
+            Uuid::new_v4(),
+            chaos_symphony_protocol::EntityReplicationAuthorityEventPayload {
+                authority_identity: self.identity.clone().into(),
+                entity_identity: entity_identity.inner.clone().into(),
+            },
+        )
+    }
+}
+
+impl ReplicateEvent for chaos_symphony_protocol::EntityReplicationAuthorityEvent {
+    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
+        &self.payload.entity_identity
+    }
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
+    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
+        let component = types::EntityReplicationAuthority {
+            identity: self.payload.authority_identity.clone().into(),
+        };
         commands.insert(component);
     }
 
