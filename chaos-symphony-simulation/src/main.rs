@@ -9,8 +9,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
-    replication::ReplicationMode,
-    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Trusted},
+    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Role, Trusted},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEventPayload};
@@ -33,7 +32,7 @@ async fn main() {
                 },
             },
         },
-        replication_mode: ReplicationMode::Simulation,
+        role: Role::Simulation,
     })
     .add_systems(
         Update,

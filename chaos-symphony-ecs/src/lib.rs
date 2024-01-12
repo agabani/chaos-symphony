@@ -36,8 +36,8 @@ pub struct DefaultPlugins {
     /// Network Authenticate.
     pub network_authenticate: network_authenticate::NetworkAuthenticatePlugin,
 
-    /// Replication Mode.
-    pub replication_mode: replication::ReplicationMode,
+    /// Role.
+    pub role: types::Role,
 }
 
 impl bevy::prelude::Plugin for DefaultPlugins {
@@ -59,7 +59,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
 
         app.add_plugins((
             entity_identities::EntityIdentitiesPlugin,
-            entity_identity::EntityIdentityPlugin::new(self.replication_mode),
+            entity_identity::EntityIdentityPlugin::new(self.role),
             replicate_entity_components::ReplicateEntityComponentsPlugin,
         ));
 
@@ -79,6 +79,6 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             types::Transformation,
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
-        >::new(self.replication_mode));
+        >::new(self.role));
     }
 }

@@ -11,8 +11,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
-    replication::ReplicationMode,
-    types::{Identity, NetworkIdentity},
+    types::{Identity, NetworkIdentity, Role},
 };
 
 #[tokio::main]
@@ -33,7 +32,7 @@ async fn main() {
                 },
             },
         },
-        replication_mode: ReplicationMode::Client,
+        role: Role::Client,
     })
     .add_plugins(transformation::TransformationPlugin)
     .add_systems(Startup, camera);

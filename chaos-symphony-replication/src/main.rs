@@ -16,10 +16,11 @@ use chaos_symphony_ecs::{
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_router::NetworkRouter,
-    replication,
-    types::{EntityIdentity, Identity, NetworkIdentity, Transformation},
+    replication::{ReplicationPlugin, ReplicationRequestPlugin},
+    types::{EntityIdentity, Identity, NetworkIdentity, Role, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
+use chaos_symphony_protocol::{TransformationEvent, TransformationEventPayload};
 use entity_identities::EntityIdentitiesPlugin;
 use network_authenticate::NetworkAuthenticatePlugin;
 use replicate_entity_components::ReplicateEntityComponentsPlugin;
@@ -28,7 +29,7 @@ use replicate_entity_components::ReplicateEntityComponentsPlugin;
 async fn main() {
     let mut app = App::new();
 
-    let mode = replication::ReplicationMode::Replication;
+    let role = Role::Replication;
 
     app.add_plugins(BevyConfigPlugin {
         headless: false,
@@ -56,19 +57,19 @@ async fn main() {
     // Default Plugins
     .add_plugins((
         EntityIdentitiesPlugin,
-        EntityIdentityPlugin::new(mode),
+        EntityIdentityPlugin::new(role),
         ReplicateEntityComponentsPlugin,
     ))
     .add_systems(Update, accepted);
     // ...
 
     // SPIKE IN PROGRESS
-    app.add_plugins(replication::ReplicationRequestPlugin);
-    app.add_plugins(replication::ReplicationPlugin::<
+    app.add_plugins(ReplicationRequestPlugin);
+    app.add_plugins(ReplicationPlugin::<
         Transformation,
-        chaos_symphony_protocol::TransformationEvent,
-        chaos_symphony_protocol::TransformationEventPayload,
-    >::new(mode));
+        TransformationEvent,
+        TransformationEventPayload,
+    >::new(role));
 
     app.register_type::<EntityIdentity>();
     app.register_type::<NetworkIdentity>();

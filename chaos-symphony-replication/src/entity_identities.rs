@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::Uuid};
-use chaos_symphony_ecs::types::{EntityIdentity, Untrusted};
+use chaos_symphony_ecs::types::{EntityIdentity, Trusted, Untrusted};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     EntityIdentitiesRequest, EntityIdentitiesResponse, EntityIdentitiesResponsePayload,
@@ -12,7 +12,8 @@ pub struct EntityIdentitiesPlugin;
 
 impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Untrusted<EntityIdentitiesRequest>>()
+        app.add_event::<Trusted<EntityIdentitiesRequest>>()
+            .add_event::<Untrusted<EntityIdentitiesRequest>>()
             .add_systems(Update, request);
     }
 }
