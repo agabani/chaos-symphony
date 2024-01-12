@@ -8,7 +8,6 @@ use std::str::FromStr as _;
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
-    network_authenticate::NetworkAuthenticatePlugin,
     types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Role, Trusted},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
@@ -18,24 +17,19 @@ use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEve
 async fn main() {
     let mut app = App::new();
 
-    let role = Role::Simulation;
-
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
             headless: false,
             log_filter: "chaos_symphony_simulation".to_string(),
             title: "Chaos Symphony Simulation".to_string(),
         },
-        network_authenticate: NetworkAuthenticatePlugin {
-            identity: NetworkIdentity {
-                inner: Identity {
-                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                    noun: "simulation".to_string(),
-                },
+        network_identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                noun: "simulation".to_string(),
             },
-            role,
         },
-        role,
+        role: Role::Simulation,
     })
     .add_systems(
         Update,

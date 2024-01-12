@@ -8,7 +8,6 @@ use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
-    network_authenticate::NetworkAuthenticatePlugin,
     types::{Identity, NetworkIdentity, Role},
 };
 use chaos_symphony_network_bevy::NetworkServer;
@@ -17,24 +16,19 @@ use chaos_symphony_network_bevy::NetworkServer;
 async fn main() {
     let mut app = App::new();
 
-    let role = Role::Replication;
-
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
             headless: false,
             log_filter: "chaos_symphony_replication".to_string(),
             title: "Chaos Symphony Replication".to_string(),
         },
-        network_authenticate: NetworkAuthenticatePlugin {
-            identity: NetworkIdentity {
-                inner: Identity {
-                    id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
-                    noun: "replication".to_string(),
-                },
+        network_identity: NetworkIdentity {
+            inner: Identity {
+                id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
+                noun: "replication".to_string(),
             },
-            role,
         },
-        role,
+        role: Role::Replication,
     })
     .add_systems(Update, accepted);
 

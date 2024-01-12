@@ -19,6 +19,14 @@ pub struct NetworkAuthenticatePlugin {
     pub role: Role,
 }
 
+impl NetworkAuthenticatePlugin {
+    /// Creates a new [`NetworkAuthenticatePlugin`].
+    #[must_use]
+    pub fn new(identity: NetworkIdentity, role: Role) -> Self {
+        Self { identity, role }
+    }
+}
+
 impl Plugin for NetworkAuthenticatePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(self.identity.clone())

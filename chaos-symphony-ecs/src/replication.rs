@@ -12,18 +12,6 @@ use crate::types::{
     Trusted, Untrusted,
 };
 
-/// Replication Request Plugin.
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
-pub struct ReplicationRequestPlugin;
-
-impl Plugin for ReplicationRequestPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<Trusted<ReplicateEntityComponentsRequest>>()
-            .add_event::<Untrusted<ReplicateEntityComponentsRequest>>();
-    }
-}
-
 /// Replication Plugin.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
