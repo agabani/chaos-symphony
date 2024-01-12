@@ -3,13 +3,12 @@
 
 //! Chaos Symphony Replication
 
-mod entity_identities;
-
 use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
+    entity_identities::EntityIdentitiesPlugin,
     entity_identity::EntityIdentityPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
     network_authority::NetworkAuthorityPlugin,
@@ -21,7 +20,6 @@ use chaos_symphony_ecs::{
 };
 use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
 use chaos_symphony_protocol::{TransformationEvent, TransformationEventPayload};
-use entity_identities::EntityIdentitiesPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -55,7 +53,7 @@ async fn main() {
     ))
     // Default Plugins
     .add_plugins((
-        EntityIdentitiesPlugin,
+        EntityIdentitiesPlugin::new(role),
         EntityIdentityPlugin::new(role),
         ReplicateEntityComponentsPlugin::new(role),
     ))

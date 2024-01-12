@@ -3,18 +3,39 @@ use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{
     EntityIdentitiesCallback, EntityIdentitiesRequest, EntityIdentitiesRequestPayload,
-    EntityIdentitiesResponsePayload, Request as _,
+    EntityIdentitiesResponse, EntityIdentitiesResponsePayload, EntityIdentityEvent,
+    EntityIdentityEventPayload, Event as _, Request as _, Response as _,
 };
 
-use crate::types::NetworkIdentity;
+use crate::types::{EntityIdentity, NetworkIdentity, Role, Trusted, Untrusted};
 
 /// Entity Identities Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct EntityIdentitiesPlugin;
+pub struct EntityIdentitiesPlugin {
+    role: Role,
+}
+
+impl EntityIdentitiesPlugin {
+    /// Creates a new [`EntityIdentitiesPlugin`].
+    #[must_use]
+    pub fn new(role: Role) -> Self {
+        Self { role }
+    }
+}
 
 impl Plugin for EntityIdentitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (callback, initiate));
+        app.add_event::<Trusted<EntityIdentitiesRequest>>()
+            .add_event::<Untrusted<EntityIdentitiesRequest>>();
+
+        match self.role {
+            Role::Client | Role::Simulation => {
+                app.add_systems(Update, (callback, initiate));
+            }
+            Role::Replication => {
+                app.add_systems(Update, request);
+            }
+        }
     }
 }
 
@@ -74,5 +95,54 @@ fn initiate(
 
         info!("request sent");
         commands.entity(entity).insert(callback);
+    });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn request(
+    mut reader: EventReader<Untrusted<EntityIdentitiesRequest>>,
+    endpoints: Query<&NetworkEndpoint>,
+    identities: Query<&EntityIdentity>,
+) {
+    reader.read().for_each(|request| {
+        let span = error_span!("request", message_id =% request.inner.id);
+        let _guard = span.enter();
+
+        let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
+            error!("request does not have source endpoint id");
+            return;
+        };
+
+        let Some(endpoint) = endpoints
+            .iter()
+            .find(|endpoint| endpoint.id() == *source_endpoint_id)
+        else {
+            warn!("endpoint not found");
+            return;
+        };
+
+        let response = EntityIdentitiesResponse::message(
+            request.inner.id,
+            EntityIdentitiesResponsePayload::Success,
+        );
+
+        if response.try_send(endpoint).is_err() {
+            warn!("failed to send response");
+        }
+
+        info!("sent response");
+
+        identities.for_each(|identity| {
+            let request = EntityIdentityEvent::message(
+                Uuid::new_v4(),
+                EntityIdentityEventPayload {
+                    inner: identity.inner.clone().into(),
+                },
+            );
+
+            if request.try_send(endpoint).is_err() {
+                warn!("failed to send event");
+            }
+        });
     });
 }

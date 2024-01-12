@@ -20,6 +20,7 @@ pub struct ReplicateEntityComponentsPlugin {
 
 impl ReplicateEntityComponentsPlugin {
     /// Creates a new [`ReplicateEntityComponentsPlugin`].
+    #[must_use]
     pub fn new(role: Role) -> Self {
         Self { role }
     }
