@@ -4,7 +4,6 @@
 //! Chaos Symphony Replication
 
 mod entity_identities;
-mod replicate_entity_components;
 
 use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 
@@ -16,13 +15,13 @@ use chaos_symphony_ecs::{
     network_authority::NetworkAuthorityPlugin,
     network_disconnect::NetworkDisconnectPlugin,
     network_router::NetworkRouter,
+    replicate_entity_components::ReplicateEntityComponentsPlugin,
     replication::{ReplicationPlugin, ReplicationRequestPlugin},
     types::{EntityIdentity, Identity, NetworkIdentity, Role, Transformation},
 };
 use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
 use chaos_symphony_protocol::{TransformationEvent, TransformationEventPayload};
 use entity_identities::EntityIdentitiesPlugin;
-use replicate_entity_components::ReplicateEntityComponentsPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -58,7 +57,7 @@ async fn main() {
     .add_plugins((
         EntityIdentitiesPlugin,
         EntityIdentityPlugin::new(role),
-        ReplicateEntityComponentsPlugin,
+        ReplicateEntityComponentsPlugin::new(role),
     ))
     .add_systems(Update, accepted);
     // ...
