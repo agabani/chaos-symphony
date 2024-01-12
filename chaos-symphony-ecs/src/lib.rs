@@ -79,6 +79,24 @@ impl bevy::prelude::Plugin for DefaultPlugins {
         );
 
         app.add_plugins(replication::ReplicationPlugin::<
+            types::EntityClientAuthority,
+            chaos_symphony_protocol::EntityClientAuthorityEvent,
+            chaos_symphony_protocol::EntityClientAuthorityEventPayload,
+        >::new(self.role));
+
+        app.add_plugins(replication::ReplicationPlugin::<
+            types::EntityReplicationAuthority,
+            chaos_symphony_protocol::EntityReplicationAuthorityEvent,
+            chaos_symphony_protocol::EntityReplicationAuthorityEventPayload,
+        >::new(self.role));
+
+        app.add_plugins(replication::ReplicationPlugin::<
+            types::EntitySimulationAuthority,
+            chaos_symphony_protocol::EntitySimulationAuthorityEvent,
+            chaos_symphony_protocol::EntitySimulationAuthorityEventPayload,
+        >::new(self.role));
+
+        app.add_plugins(replication::ReplicationPlugin::<
             types::Transformation,
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
@@ -89,7 +107,8 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::Identity>()
             .register_type::<types::EntityIdentity>()
             .register_type::<types::EntityClientAuthority>()
-            .register_type::<types::EntityServerAuthority>()
+            .register_type::<types::EntityReplicationAuthority>()
+            .register_type::<types::EntitySimulationAuthority>()
             .register_type::<types::NetworkIdentity>()
             .register_type::<types::NetworkClientAuthority>()
             .register_type::<types::NetworkServerAuthority>()

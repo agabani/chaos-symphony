@@ -95,14 +95,14 @@ impl EntityAuthority for EntityReplicationAuthority {
     }
 }
 
-/// Entity Server Authority.
+/// Entity Simulation Authority.
 #[derive(Debug, Clone, PartialEq, Eq, Component, Reflect)]
-pub struct EntityServerAuthority {
+pub struct EntitySimulationAuthority {
     /// Identity.
     pub identity: Identity,
 }
 
-impl EntityAuthority for EntityServerAuthority {
+impl EntityAuthority for EntitySimulationAuthority {
     fn identity(&self) -> &Identity {
         &self.identity
     }

@@ -8,10 +8,16 @@ use std::str::FromStr as _;
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
-    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Role, Trusted},
+    types::{
+        EntityClientAuthority, EntityIdentity, EntityReplicationAuthority,
+        EntitySimulationAuthority, Identity, NetworkIdentity, ReplicateSource, Role, Trusted,
+    },
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEventPayload};
+use chaos_symphony_protocol::{
+    EntityClientAuthorityEvent, EntityReplicationAuthorityEvent, EntitySimulationAuthorityEvent,
+    Event as _, TransformationEvent, TransformationEventPayload,
+};
 
 #[tokio::main]
 async fn main() {
@@ -59,6 +65,24 @@ fn test_spawn_entity_identity_after_network_authenticate(
             PeriodicTimer {
                 inner: Timer::from_seconds(1.0, TimerMode::Repeating),
             },
+            EntityClientAuthority {
+                identity: Identity {
+                    id: Uuid::from_str("d908808f-073d-4c57-9c08-bf91ba2b1bce").unwrap(),
+                    noun: "ai".to_string(),
+                },
+            },
+            EntityReplicationAuthority {
+                identity: Identity {
+                    id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
+                    noun: "replication".to_string(),
+                },
+            },
+            EntitySimulationAuthority {
+                identity: Identity {
+                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                    noun: "simulation".to_string(),
+                },
+            },
         ));
     });
 }
@@ -73,6 +97,9 @@ fn test_translate_entity_identity_periodically(
     time: Res<Time>,
     mut query: Query<(&EntityIdentity, &mut PeriodicTimer)>,
     mut writer: EventWriter<Trusted<TransformationEvent>>,
+    mut writer_s: EventWriter<Trusted<EntitySimulationAuthorityEvent>>,
+    mut writer_r: EventWriter<Trusted<EntityReplicationAuthorityEvent>>,
+    mut writer_c: EventWriter<Trusted<EntityClientAuthorityEvent>>,
 ) {
     query.for_each_mut(|(entity_identity, mut timer)| {
         if timer.inner.tick(time.delta()).finished() {
@@ -102,6 +129,69 @@ fn test_translate_entity_identity_periodically(
             });
 
             writer.send(Trusted { inner: message });
+
+            {
+                let mut message = EntitySimulationAuthorityEvent::message(
+                    Uuid::new_v4(),
+                    chaos_symphony_protocol::EntitySimulationAuthorityEventPayload {
+                        authority_identity: Identity {
+                            id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                            noun: "simulation".to_string(),
+                        }
+                        .into(),
+                        entity_identity: entity_identity.inner.clone().into(),
+                    },
+                );
+
+                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
+                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                    noun: "simulation".to_string(),
+                });
+
+                writer_s.send(Trusted { inner: message });
+            }
+
+            {
+                let mut message = EntityReplicationAuthorityEvent::message(
+                    Uuid::new_v4(),
+                    chaos_symphony_protocol::EntityReplicationAuthorityEventPayload {
+                        authority_identity: Identity {
+                            id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
+                            noun: "replication".to_string(),
+                        }
+                        .into(),
+                        entity_identity: entity_identity.inner.clone().into(),
+                    },
+                );
+
+                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
+                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                    noun: "simulation".to_string(),
+                });
+
+                writer_r.send(Trusted { inner: message });
+            }
+
+            {
+                let mut message = EntityClientAuthorityEvent::message(
+                    Uuid::new_v4(),
+                    chaos_symphony_protocol::EntityClientAuthorityEventPayload {
+                        authority_identity: Identity {
+                            id: Uuid::from_str("d908808f-073d-4c57-9c08-bf91ba2b1bce").unwrap(),
+                            noun: "ai".to_string(),
+                        }
+                        .into(),
+                        entity_identity: entity_identity.inner.clone().into(),
+                    },
+                );
+
+                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
+                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
+                    noun: "simulation".to_string(),
+                });
+
+                writer_c.send(Trusted { inner: message });
+            }
         }
     });
 }
