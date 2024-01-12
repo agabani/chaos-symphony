@@ -46,22 +46,42 @@ impl bevy::prelude::Plugin for DefaultPlugins {
 
         app.add_plugins((
             chaos_symphony_network_bevy::NetworkPlugin {
-                client: true,
-                server: false,
+                client: match self.role {
+                    types::Role::Client | types::Role::Simulation => true,
+                    types::Role::Replication => false,
+                },
+                server: match self.role {
+                    types::Role::Client | types::Role::Simulation => false,
+                    types::Role::Replication => true,
+                },
             },
             self.network_authenticate.clone(),
             network_authority::NetworkAuthorityPlugin,
-            network_connect::NetworkConnectPlugin,
             network_disconnect::NetworkDisconnectPlugin,
-            network_keep_alive::NetworkKeepAlivePlugin,
             network_router::NetworkRouter,
         ));
+
+        match self.role {
+            types::Role::Client | types::Role::Simulation => {
+                app.add_plugins(network_connect::NetworkConnectPlugin);
+                app.add_plugins(network_keep_alive::NetworkKeepAlivePlugin);
+            }
+            types::Role::Replication => {}
+        }
 
         app.add_plugins((
             entity_identities::EntityIdentitiesPlugin::new(self.role),
             entity_identity::EntityIdentityPlugin::new(self.role),
             replicate_entity_components::ReplicateEntityComponentsPlugin::new(self.role),
         ));
+
+        // replication
+        app.add_plugins(replication::ReplicationRequestPlugin);
+        app.add_plugins(replication::ReplicationPlugin::<
+            types::Transformation,
+            chaos_symphony_protocol::TransformationEvent,
+            chaos_symphony_protocol::TransformationEventPayload,
+        >::new(self.role));
 
         app.register_type::<bevy::utils::Uuid>()
             .register_type::<types::Identity>()
@@ -72,13 +92,5 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::NetworkClientAuthority>()
             .register_type::<types::NetworkServerAuthority>()
             .register_type::<types::Transformation>();
-
-        // SPIKE IN PROGRESS
-        app.add_plugins(replication::ReplicationRequestPlugin);
-        app.add_plugins(replication::ReplicationPlugin::<
-            types::Transformation,
-            chaos_symphony_protocol::TransformationEvent,
-            chaos_symphony_protocol::TransformationEventPayload,
-        >::new(self.role));
     }
 }

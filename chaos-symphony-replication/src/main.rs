@@ -8,18 +8,10 @@ use std::{str::FromStr as _, sync::mpsc::TryRecvError};
 use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
-    entity_identities::EntityIdentitiesPlugin,
-    entity_identity::EntityIdentityPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
-    network_authority::NetworkAuthorityPlugin,
-    network_disconnect::NetworkDisconnectPlugin,
-    network_router::NetworkRouter,
-    replicate_entity_components::ReplicateEntityComponentsPlugin,
-    replication::{ReplicationPlugin, ReplicationRequestPlugin},
-    types::{EntityIdentity, Identity, NetworkIdentity, Role, Transformation},
+    types::{Identity, NetworkIdentity, Role},
 };
-use chaos_symphony_network_bevy::{NetworkPlugin, NetworkServer};
-use chaos_symphony_protocol::{TransformationEvent, TransformationEventPayload};
+use chaos_symphony_network_bevy::NetworkServer;
 
 #[tokio::main]
 async fn main() {
@@ -27,18 +19,13 @@ async fn main() {
 
     let role = Role::Replication;
 
-    app.add_plugins(BevyConfigPlugin {
-        headless: false,
-        log_filter: "chaos_symphony_replication".to_string(),
-        title: "Chaos Symphony Replication".to_string(),
-    })
-    // Default Plugins (Network)
-    .add_plugins((
-        NetworkPlugin {
-            client: false,
-            server: true,
+    app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
+        bevy_config: BevyConfigPlugin {
+            headless: false,
+            log_filter: "chaos_symphony_replication".to_string(),
+            title: "Chaos Symphony Replication".to_string(),
         },
-        NetworkAuthenticatePlugin {
+        network_authenticate: NetworkAuthenticatePlugin {
             identity: NetworkIdentity {
                 inner: Identity {
                     id: Uuid::from_str("84988f7d-2146-4677-b4f8-6d503f72fea3").unwrap(),
@@ -47,30 +34,9 @@ async fn main() {
             },
             role,
         },
-        NetworkAuthorityPlugin,
-        NetworkDisconnectPlugin,
-        NetworkRouter,
-    ))
-    // Default Plugins
-    .add_plugins((
-        EntityIdentitiesPlugin::new(role),
-        EntityIdentityPlugin::new(role),
-        ReplicateEntityComponentsPlugin::new(role),
-    ))
+        role,
+    })
     .add_systems(Update, accepted);
-    // ...
-
-    // SPIKE IN PROGRESS
-    app.add_plugins(ReplicationRequestPlugin);
-    app.add_plugins(ReplicationPlugin::<
-        Transformation,
-        TransformationEvent,
-        TransformationEventPayload,
-    >::new(role));
-
-    app.register_type::<EntityIdentity>();
-    app.register_type::<NetworkIdentity>();
-    app.register_type::<Transformation>();
 
     app.run();
 }
