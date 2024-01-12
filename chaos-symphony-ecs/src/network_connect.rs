@@ -2,13 +2,30 @@ use bevy::prelude::*;
 use chaos_symphony_async::Poll;
 use chaos_symphony_network_bevy::{Connecting, NetworkClient, NetworkEndpoint};
 
+use crate::types::Role;
+
 /// Network Connect Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct NetworkConnectPlugin;
+pub struct NetworkConnectPlugin {
+    role: Role,
+}
+
+impl NetworkConnectPlugin {
+    /// Creates a new [`NetworkConnectPlugin`].
+    #[must_use]
+    pub fn new(role: Role) -> Self {
+        Self { role }
+    }
+}
 
 impl Plugin for NetworkConnectPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (connect, connecting));
+        match self.role {
+            Role::Client | Role::Simulation => {
+                app.add_systems(Update, (connect, connecting));
+            }
+            Role::Replication => {}
+        }
     }
 }
 

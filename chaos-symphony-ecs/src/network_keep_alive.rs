@@ -4,14 +4,31 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{Event as _, PingEvent, PingEventPayload};
 
+use crate::types::Role;
+
 /// Network Keep Alive Plugin.
 #[allow(clippy::module_name_repetitions)]
-pub struct NetworkKeepAlivePlugin;
+pub struct NetworkKeepAlivePlugin {
+    role: Role,
+}
+
+impl NetworkKeepAlivePlugin {
+    /// Creates a new [`NetworkKeepAlivePlugin`].
+    #[must_use]
+    pub fn new(role: Role) -> Self {
+        Self { role }
+    }
+}
 
 impl Plugin for NetworkKeepAlivePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(KeepAliveTimer::new())
-            .add_systems(Update, keep_alive);
+        match self.role {
+            Role::Client | Role::Simulation => {
+                app.insert_resource(KeepAliveTimer::new())
+                    .add_systems(Update, keep_alive);
+            }
+            Role::Replication => {}
+        }
     }
 }
 

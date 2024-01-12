@@ -28,6 +28,9 @@ impl ReplicateEntityComponentsPlugin {
 
 impl Plugin for ReplicateEntityComponentsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_event::<Trusted<ReplicateEntityComponentsRequest>>()
+            .add_event::<Untrusted<ReplicateEntityComponentsRequest>>();
+
         match self.role {
             Role::Client | Role::Simulation => {
                 app.add_systems(Update, (callback, initiate));

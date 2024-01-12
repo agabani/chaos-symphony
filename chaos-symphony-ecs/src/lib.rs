@@ -44,6 +44,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_plugins(self.bevy_config.clone());
 
+        // network
         app.add_plugins((
             chaos_symphony_network_bevy::NetworkPlugin {
                 client: match self.role {
@@ -60,32 +61,30 @@ impl bevy::prelude::Plugin for DefaultPlugins {
                 self.role,
             ),
             network_authority::NetworkAuthorityPlugin,
+            network_connect::NetworkConnectPlugin::new(self.role),
             network_disconnect::NetworkDisconnectPlugin,
+            network_keep_alive::NetworkKeepAlivePlugin::new(self.role),
             network_router::NetworkRouter,
         ));
 
-        match self.role {
-            types::Role::Client | types::Role::Simulation => {
-                app.add_plugins(network_connect::NetworkConnectPlugin);
-                app.add_plugins(network_keep_alive::NetworkKeepAlivePlugin);
-            }
-            types::Role::Replication => {}
-        }
-
+        // entity
         app.add_plugins((
             entity_identities::EntityIdentitiesPlugin::new(self.role),
             entity_identity::EntityIdentityPlugin::new(self.role),
-            replicate_entity_components::ReplicateEntityComponentsPlugin::new(self.role),
         ));
 
         // replication
-        app.add_plugins(replication::ReplicationRequestPlugin);
+        app.add_plugins(
+            replicate_entity_components::ReplicateEntityComponentsPlugin::new(self.role),
+        );
+
         app.add_plugins(replication::ReplicationPlugin::<
             types::Transformation,
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
         >::new(self.role));
 
+        // type
         app.register_type::<bevy::utils::Uuid>()
             .register_type::<types::Identity>()
             .register_type::<types::EntityIdentity>()
