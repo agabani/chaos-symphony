@@ -8,8 +8,8 @@ use chaos_symphony_protocol::{
 
 use crate::types::{
     EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntityServerAuthority,
-    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, Transformation, Trusted,
-    Untrusted,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, Role, Transformation,
+    Trusted, Untrusted,
 };
 
 /// Replication Request Plugin.
@@ -28,7 +28,7 @@ impl Plugin for ReplicationRequestPlugin {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct ReplicationPlugin<C, E, P> {
-    mode: ReplicationMode,
+    role: Role,
     _c: PhantomData<C>,
     _e: PhantomData<E>,
     _p: PhantomData<P>,
@@ -37,9 +37,9 @@ pub struct ReplicationPlugin<C, E, P> {
 impl<C, E, P> ReplicationPlugin<C, E, P> {
     /// Creates a new [`ReplicationPlugin`].
     #[must_use]
-    pub fn new(mode: ReplicationMode) -> Self {
+    pub fn new(role: Role) -> Self {
         Self {
-            mode,
+            role,
             _c: PhantomData,
             _e: PhantomData,
             _p: PhantomData,
@@ -59,8 +59,8 @@ where
 
         app.add_systems(Update, apply_trusted_event::<E>);
 
-        match self.mode {
-            ReplicationMode::Client => {
+        match self.role {
+            Role::Client => {
                 app.add_systems(
                     Update,
                     send_untrusted_event::<
@@ -71,7 +71,7 @@ where
                     >,
                 );
             }
-            ReplicationMode::Replication => {
+            Role::Replication => {
                 app.add_systems(Update, send_trusted_event::<E, P>);
                 app.add_systems(
                     Update,
@@ -85,26 +85,12 @@ where
                 );
                 app.add_systems(Update, replicate_trusted_component::<C, P>);
             }
-            ReplicationMode::Simulation => {
+            Role::Simulation => {
                 app.add_systems(Update, send_trusted_event::<E, P>);
                 app.add_systems(Update, replicate_trusted_component::<C, P>);
             }
         };
     }
-}
-
-/// Replication Mode.
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Copy)]
-pub enum ReplicationMode {
-    /// Client.
-    Client,
-
-    /// Replication.
-    Replication,
-
-    /// Simulation.
-    Simulation,
 }
 
 #[allow(clippy::needless_pass_by_value)]

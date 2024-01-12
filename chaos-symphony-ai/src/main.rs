@@ -9,13 +9,14 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
-    replication::ReplicationMode,
-    types::{Identity, NetworkIdentity},
+    types::{Identity, NetworkIdentity, Role},
 };
 
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
+
+    let role = Role::Client;
 
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
@@ -30,8 +31,9 @@ async fn main() {
                     noun: "ai".to_string(),
                 },
             },
+            role,
         },
-        replication_mode: ReplicationMode::Client,
+        role,
     });
 
     app.run();

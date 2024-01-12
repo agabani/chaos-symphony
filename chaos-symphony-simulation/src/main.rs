@@ -9,8 +9,7 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     network_authenticate::NetworkAuthenticatePlugin,
-    replication::ReplicationMode,
-    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Trusted},
+    types::{EntityIdentity, Identity, NetworkIdentity, ReplicateSource, Role, Trusted},
 };
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEventPayload};
@@ -18,6 +17,8 @@ use chaos_symphony_protocol::{Event as _, TransformationEvent, TransformationEve
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
+
+    let role = Role::Simulation;
 
     app.add_plugins(chaos_symphony_ecs::DefaultPlugins {
         bevy_config: BevyConfigPlugin {
@@ -32,8 +33,9 @@ async fn main() {
                     noun: "simulation".to_string(),
                 },
             },
+            role,
         },
-        replication_mode: ReplicationMode::Simulation,
+        role,
     })
     .add_systems(
         Update,

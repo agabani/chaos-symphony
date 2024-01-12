@@ -2,22 +2,19 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{EntityIdentityEvent, EntityIdentityEventPayload, Event};
 
-use crate::{
-    replication::ReplicationMode,
-    types::{EntityIdentity, NetworkIdentity, ReplicateSource, Trusted},
-};
+use crate::types::{EntityIdentity, NetworkIdentity, ReplicateSource, Role, Trusted};
 
 /// Entity Identity Plugin.
 #[allow(clippy::module_name_repetitions)]
 pub struct EntityIdentityPlugin {
-    mode: ReplicationMode,
+    role: Role,
 }
 
 impl EntityIdentityPlugin {
     /// Creates a new [`EntityIdentityPlugin`].
     #[must_use]
-    pub fn new(mode: ReplicationMode) -> Self {
-        Self { mode }
+    pub fn new(role: Role) -> Self {
+        Self { role }
     }
 }
 
@@ -27,12 +24,12 @@ impl Plugin for EntityIdentityPlugin {
 
         app.add_systems(Update, apply_trusted_event);
 
-        match self.mode {
-            ReplicationMode::Client => {}
-            ReplicationMode::Replication => {
+        match self.role {
+            Role::Client => {}
+            Role::Replication => {
                 app.add_systems(Update, send_trusted_event);
             }
-            ReplicationMode::Simulation => {
+            Role::Simulation => {
                 app.add_systems(Update, replicate_changed);
             }
         }
