@@ -1,15 +1,13 @@
 use std::marker::PhantomData;
 
-use bevy::{ecs::system::EntityCommands, prelude::*, utils::Uuid};
+use bevy::prelude::*;
 use chaos_symphony_network_bevy::NetworkEndpoint;
-use chaos_symphony_protocol::{
-    Event as _, ReplicateEntityComponentsRequest, TransformationEvent, TransformationEventPayload,
-};
+use chaos_symphony_protocol::{Event as _, ReplicateEntityComponentsRequest};
 
 use crate::types::{
-    self, EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
-    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, Role, Transformation,
-    Trusted, Untrusted,
+    EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, ReplicateComponent,
+    ReplicateEvent, Role, Trusted, Untrusted,
 };
 
 /// Replication Plugin.
@@ -209,166 +207,4 @@ fn replicate_trusted_component<C, P>(
             error!("failed to send event");
         };
     });
-}
-
-/// Replicate Component.
-pub trait ReplicateComponent {
-    /// Message.
-    type Message;
-
-    /// To Message.
-    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message;
-}
-
-impl ReplicateComponent for Transformation {
-    type Message = TransformationEvent;
-
-    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
-        TransformationEvent::message(
-            Uuid::new_v4(),
-            TransformationEventPayload {
-                entity_identity: entity_identity.inner.clone().into(),
-                transformation: (*self).into(),
-            },
-        )
-    }
-}
-
-/// Replicate Event.
-pub trait ReplicateEvent {
-    /// Entity Identity.
-    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity;
-
-    /// Id.
-    fn id(&self) -> Uuid;
-
-    /// Insert Bundle.
-    fn insert_bundle(&self, commands: EntityCommands<'_, '_, '_>);
-
-    /// Source Identity.
-    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity>;
-}
-
-impl ReplicateEvent for TransformationEvent {
-    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
-        &self.payload.entity_identity
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-
-    fn insert_bundle(&self, mut commands: EntityCommands) {
-        let component: Transformation = self.payload.transformation.into();
-        commands.insert(component);
-    }
-
-    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
-        self.header.source_identity.as_ref()
-    }
-}
-
-impl ReplicateComponent for types::EntityClientAuthority {
-    type Message = chaos_symphony_protocol::EntityClientAuthorityEvent;
-
-    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
-        chaos_symphony_protocol::EntityClientAuthorityEvent::message(
-            Uuid::new_v4(),
-            chaos_symphony_protocol::EntityClientAuthorityEventPayload {
-                authority_identity: self.identity.clone().into(),
-                entity_identity: entity_identity.inner.clone().into(),
-            },
-        )
-    }
-}
-
-impl ReplicateEvent for chaos_symphony_protocol::EntityClientAuthorityEvent {
-    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
-        &self.payload.entity_identity
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-
-    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
-        let component = types::EntityClientAuthority {
-            identity: self.payload.authority_identity.clone().into(),
-        };
-        commands.insert(component);
-    }
-
-    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
-        self.header.source_identity.as_ref()
-    }
-}
-
-impl ReplicateComponent for types::EntitySimulationAuthority {
-    type Message = chaos_symphony_protocol::EntitySimulationAuthorityEvent;
-
-    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
-        chaos_symphony_protocol::EntitySimulationAuthorityEvent::message(
-            Uuid::new_v4(),
-            chaos_symphony_protocol::EntitySimulationAuthorityEventPayload {
-                authority_identity: self.identity.clone().into(),
-                entity_identity: entity_identity.inner.clone().into(),
-            },
-        )
-    }
-}
-
-impl ReplicateEvent for chaos_symphony_protocol::EntitySimulationAuthorityEvent {
-    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
-        &self.payload.entity_identity
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-
-    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
-        let component = types::EntitySimulationAuthority {
-            identity: self.payload.authority_identity.clone().into(),
-        };
-        commands.insert(component);
-    }
-
-    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
-        self.header.source_identity.as_ref()
-    }
-}
-
-impl ReplicateComponent for types::EntityReplicationAuthority {
-    type Message = chaos_symphony_protocol::EntityReplicationAuthorityEvent;
-
-    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
-        chaos_symphony_protocol::EntityReplicationAuthorityEvent::message(
-            Uuid::new_v4(),
-            chaos_symphony_protocol::EntityReplicationAuthorityEventPayload {
-                authority_identity: self.identity.clone().into(),
-                entity_identity: entity_identity.inner.clone().into(),
-            },
-        )
-    }
-}
-
-impl ReplicateEvent for chaos_symphony_protocol::EntityReplicationAuthorityEvent {
-    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
-        &self.payload.entity_identity
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-
-    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
-        let component = types::EntityReplicationAuthority {
-            identity: self.payload.authority_identity.clone().into(),
-        };
-        commands.insert(component);
-    }
-
-    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
-        self.header.source_identity.as_ref()
-    }
 }
