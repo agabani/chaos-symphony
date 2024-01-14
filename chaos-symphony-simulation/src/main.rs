@@ -14,7 +14,7 @@ use chaos_symphony_ecs::{
     bevy_config::BevyConfigPlugin,
     types::{
         EntityClientAuthority, EntityIdentity, EntityReplicationAuthority,
-        EntitySimulationAuthority, Identity, NetworkIdentity, ReplicateSource, Role,
+        EntitySimulationAuthority, Identity, NetworkIdentity, ReplicateSource, Role, Ship,
         Transformation,
     },
 };
@@ -84,6 +84,7 @@ fn test_spawn_entity_identity_after_network_authenticate(
                     noun: "simulation".to_string(),
                 },
             },
+            Ship,
             Transformation {
                 orientation: DQuat::from_rotation_z(0.0),
                 position: DVec3::ZERO,

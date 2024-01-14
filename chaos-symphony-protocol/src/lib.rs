@@ -10,6 +10,7 @@ mod entity_identity;
 mod message;
 mod ping;
 mod replicate_entity_components;
+mod ship;
 mod transformation;
 mod types;
 
@@ -20,5 +21,6 @@ pub use entity_identity::*;
 pub use message::*;
 pub use ping::*;
 pub use replicate_entity_components::*;
+pub use ship::*;
 pub use transformation::*;
 pub use types::*;

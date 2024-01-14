@@ -102,6 +102,12 @@ impl bevy::prelude::Plugin for DefaultPlugins {
         >::new(self.role));
 
         app.add_plugins(replication::ReplicationPlugin::<
+            types::Ship,
+            chaos_symphony_protocol::ShipEvent,
+            chaos_symphony_protocol::ShipEventPayload,
+        >::new(self.role));
+
+        app.add_plugins(replication::ReplicationPlugin::<
             types::Transformation,
             chaos_symphony_protocol::TransformationEvent,
             chaos_symphony_protocol::TransformationEventPayload,
@@ -117,6 +123,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::NetworkIdentity>()
             .register_type::<types::NetworkClientAuthority>()
             .register_type::<types::NetworkServerAuthority>()
+            .register_type::<types::Ship>()
             .register_type::<types::Transformation>();
     }
 }

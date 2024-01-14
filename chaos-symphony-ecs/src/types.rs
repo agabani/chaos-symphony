@@ -321,6 +321,48 @@ pub enum Role {
 
 /*
  * ============================================================================
+ * Ship.
+ * ============================================================================
+ */
+
+/// Ship.
+#[derive(Debug, Clone, Copy, PartialEq, Component, Reflect)]
+pub struct Ship;
+
+impl ReplicateComponent for Ship {
+    type Message = chaos_symphony_protocol::ShipEvent;
+
+    fn to_message(&self, entity_identity: &EntityIdentity) -> Self::Message {
+        chaos_symphony_protocol::ShipEvent::message(
+            Uuid::new_v4(),
+            chaos_symphony_protocol::ShipEventPayload {
+                entity_identity: entity_identity.inner.clone().into(),
+            },
+        )
+    }
+}
+
+impl ReplicateEvent for chaos_symphony_protocol::ShipEvent {
+    fn entity_identity(&self) -> &chaos_symphony_protocol::Identity {
+        &self.payload.entity_identity
+    }
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
+    fn insert_bundle(&self, mut commands: EntityCommands<'_, '_, '_>) {
+        let component = Ship;
+        commands.insert(component);
+    }
+
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
+        self.header.source_identity.as_ref()
+    }
+}
+
+/*
+ * ============================================================================
  * Transformation
  * ============================================================================
  */

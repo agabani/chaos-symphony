@@ -5,7 +5,7 @@ use chaos_symphony_network_bevy::{NetworkEndpoint, NetworkRecv};
 use chaos_symphony_protocol::{
     AuthenticateRequest, EntityClientAuthorityEvent, EntityIdentitiesRequest, EntityIdentityEvent,
     EntityReplicationAuthorityEvent, EntitySimulationAuthorityEvent, Event, Message, PingEvent,
-    ReplicateEntityComponentsRequest, Request as _, TransformationEvent,
+    ReplicateEntityComponentsRequest, Request as _, ShipEvent, TransformationEvent,
 };
 
 use crate::types::{NetworkIdentity, Trusted, Untrusted};
@@ -80,6 +80,15 @@ fn route(mut commands: Commands, endpoints: Query<(&NetworkEndpoint, Option<&Net
                         endpoint,
                         identity,
                         ReplicateEntityComponentsRequest::from(message),
+                    );
+                }
+                ShipEvent::ENDPOINT => {
+                    dispatch(
+                        //
+                        &mut commands,
+                        endpoint,
+                        identity,
+                        ShipEvent::from(message),
                     );
                 }
                 TransformationEvent::ENDPOINT => {
