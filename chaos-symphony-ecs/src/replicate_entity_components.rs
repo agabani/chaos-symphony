@@ -8,7 +8,9 @@ use chaos_symphony_protocol::{
 };
 
 use crate::types::{
-    EntityIdentity, NetworkIdentity, ReplicateSink, ReplicateSource, Role, Trusted, Untrusted,
+    EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, ReplicateSink,
+    ReplicateSource, Role, Trusted, Untrusted,
 };
 
 /// Replicate Entity Components Plugin.
@@ -29,14 +31,21 @@ impl ReplicateEntityComponentsPlugin {
 impl Plugin for ReplicateEntityComponentsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Trusted<ReplicateEntityComponentsRequest>>()
-            .add_event::<Untrusted<ReplicateEntityComponentsRequest>>();
+            .add_event::<Untrusted<ReplicateEntityComponentsRequest>>()
+            .add_systems(Update, (callback, request));
 
         match self.role {
             Role::Client | Role::Simulation => {
-                app.add_systems(Update, (callback, initiate));
+                app.add_systems(
+                    Update,
+                    initiate::<EntityReplicationAuthority, NetworkReplicationAuthority>,
+                );
             }
             Role::Replication => {
-                app.add_systems(Update, request);
+                app.add_systems(
+                    Update,
+                    initiate::<EntitySimulationAuthority, NetworkServerAuthority>,
+                );
             }
         }
     }
@@ -76,36 +85,45 @@ fn callback(
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::type_complexity)]
-fn initiate(
+fn initiate<EA, NA>(
     mut commands: Commands,
-    identities: Query<
-        (Entity, &EntityIdentity),
+    endpoints: Query<(&NetworkEndpoint, &NetworkIdentity), With<NA>>,
+    entities: Query<
+        (Entity, &EA, &EntityIdentity),
         (
             Without<ReplicateSink>,
             Without<ReplicateSource>,
             Without<ReplicateEntityComponentsCallback>,
         ),
     >,
-    endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
-) {
-    if let Some(endpoint) = endpoints.iter().next() {
-        identities.for_each(|(entity, identity)| {
-            let request = ReplicateEntityComponentsRequest::message(
-                Uuid::new_v4(),
-                ReplicateEntityComponentsRequestPayload {
-                    entity_identity: identity.inner.clone().into(),
-                },
-            );
+) where
+    EA: EntityAuthority + Component,
+    NA: Component,
+{
+    entities.for_each(|(entity, entity_authority, entity_identity)| {
+        let Some((endpoint, _)) = endpoints
+            .iter()
+            .find(|(_, network_identity)| network_identity.inner == *entity_authority.identity())
+        else {
+            error!("network identity does not exist");
+            return;
+        };
 
-            let Ok(callback) = request.try_send(endpoint) else {
-                error!("failed to send request");
-                return;
-            };
+        let request = ReplicateEntityComponentsRequest::message(
+            Uuid::new_v4(),
+            ReplicateEntityComponentsRequestPayload {
+                entity_identity: entity_identity.inner.clone().into(),
+            },
+        );
 
-            info!("request sent");
-            commands.entity(entity).insert(callback);
-        });
-    }
+        let Ok(callback) = request.try_send(endpoint) else {
+            error!("failed to send request");
+            return;
+        };
+
+        info!("request sent");
+        commands.entity(entity).insert(callback);
+    });
 }
 
 #[allow(clippy::needless_pass_by_value)]

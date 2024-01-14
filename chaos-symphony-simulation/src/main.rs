@@ -105,8 +105,6 @@ fn test_translate_entity_identity_periodically(
     query.for_each_mut(|(mut transformation, mut timer)| {
         if timer.inner.tick(time.delta()).finished() {
             transformation.position.x = time.elapsed_seconds_f64();
-            transformation.position.y = time.elapsed_seconds_f64();
-            transformation.position.z = time.elapsed_seconds_f64();
         }
     });
 }
