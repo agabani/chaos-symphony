@@ -11,6 +11,7 @@ mod message;
 mod ping;
 mod replicate_entity_components;
 mod ship;
+mod ship_spawn;
 mod transformation;
 mod types;
 
@@ -22,5 +23,6 @@ pub use message::*;
 pub use ping::*;
 pub use replicate_entity_components::*;
 pub use ship::*;
+pub use ship_spawn::*;
 pub use transformation::*;
 pub use types::*;
