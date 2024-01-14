@@ -93,6 +93,12 @@ fn apply_trusted_event<E>(
         let span = error_span!("event", message_id =%  trusted.inner.id());
         let _guard = span.enter();
 
+        if trusted.inner.source_identity().is_none() {
+            // Trusted event originated from the current process.
+            // Implies that the event was generated from components that have already been updated.
+            return;
+        }
+
         let Some((_, entity)) = query
             .iter()
             .find(|(entity_identity, _)| entity_identity.inner == *trusted.inner.entity_identity())
@@ -116,7 +122,12 @@ fn send_trusted_event<E, P>(
         endpoints
             .iter()
             .filter(|(_, network_identity)| {
-                network_identity.inner != *event.inner.source_identity()
+                event
+                    .inner
+                    .source_identity()
+                    .map_or(true, |source_identity| {
+                        *source_identity != network_identity.inner
+                    })
             })
             .for_each(|(endpoint, _)| {
                 let message = event.inner.clone();
@@ -235,7 +246,7 @@ pub trait ReplicateEvent {
     fn insert_bundle(&self, commands: EntityCommands<'_, '_, '_>);
 
     /// Source Identity.
-    fn source_identity(&self) -> &chaos_symphony_protocol::Identity;
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity>;
 }
 
 impl ReplicateEvent for TransformationEvent {
@@ -252,8 +263,8 @@ impl ReplicateEvent for TransformationEvent {
         commands.insert(component);
     }
 
-    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
-        self.header.source_identity.as_ref().unwrap()
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
+        self.header.source_identity.as_ref()
     }
 }
 
@@ -287,8 +298,8 @@ impl ReplicateEvent for chaos_symphony_protocol::EntityClientAuthorityEvent {
         commands.insert(component);
     }
 
-    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
-        self.header.source_identity.as_ref().unwrap()
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
+        self.header.source_identity.as_ref()
     }
 }
 
@@ -322,8 +333,8 @@ impl ReplicateEvent for chaos_symphony_protocol::EntitySimulationAuthorityEvent 
         commands.insert(component);
     }
 
-    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
-        self.header.source_identity.as_ref().unwrap()
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
+        self.header.source_identity.as_ref()
     }
 }
 
@@ -357,7 +368,7 @@ impl ReplicateEvent for chaos_symphony_protocol::EntityReplicationAuthorityEvent
         commands.insert(component);
     }
 
-    fn source_identity(&self) -> &chaos_symphony_protocol::Identity {
-        self.header.source_identity.as_ref().unwrap()
+    fn source_identity(&self) -> Option<&chaos_symphony_protocol::Identity> {
+        self.header.source_identity.as_ref()
     }
 }
