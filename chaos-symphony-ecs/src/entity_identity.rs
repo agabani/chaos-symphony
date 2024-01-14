@@ -33,7 +33,7 @@ impl Plugin for EntityIdentityPlugin {
                 app.add_systems(Update, send_trusted_event);
             }
             Role::Simulation => {
-                app.add_systems(Update, replicate_changed);
+                app.add_systems(Update, broadcast_on_change);
             }
         }
     }
@@ -61,6 +61,10 @@ fn apply_trusted_event(
             inner: trusted.inner.payload.inner.clone().into(),
         });
 
+        /*
+         * ReplicateEntityComponentsPlugin will need to replicate components,
+         * which requires knowledge of where the components originated from.
+         */
         if let Some(network_identity) = &trusted.inner.header.source_identity {
             match network_identity.noun.as_str() {
                 "replication" => {
@@ -102,7 +106,7 @@ fn send_trusted_event(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn replicate_changed(
+fn broadcast_on_change(
     entity_identities: Query<&EntityIdentity, (Changed<EntityIdentity>, With<ReplicateSource>)>,
     endpoints: Query<&NetworkEndpoint, With<NetworkIdentity>>,
 ) {

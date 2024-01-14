@@ -102,7 +102,7 @@ fn initiate(
 fn request(
     mut reader: EventReader<Untrusted<EntityIdentitiesRequest>>,
     endpoints: Query<&NetworkEndpoint>,
-    identities: Query<&EntityIdentity>,
+    entity_identities: Query<&EntityIdentity>,
 ) {
     reader.read().for_each(|request| {
         let span = error_span!("request", message_id =% request.inner.id);
@@ -132,11 +132,13 @@ fn request(
 
         info!("sent response");
 
-        identities.for_each(|identity| {
+        entity_identities.for_each(|entity_identity| {
+            // TODO: filter entity identities using requesters permissions.
+
             let request = EntityIdentityEvent::message(
                 Uuid::new_v4(),
                 EntityIdentityEventPayload {
-                    inner: identity.inner.clone().into(),
+                    inner: entity_identity.inner.clone().into(),
                 },
             );
 

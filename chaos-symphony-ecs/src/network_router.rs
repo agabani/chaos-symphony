@@ -129,19 +129,25 @@ pub fn dispatch<T>(
         Some(identity) => match identity.noun.as_str() {
             "ai" | "client" => {
                 commands.add(|world: &mut World| {
-                    world.send_event(Untrusted { inner: message });
+                    let event = Untrusted { inner: message };
+                    // warn!("{event:?}");
+                    world.send_event(event);
                 });
             }
             "replication" | "simulation" => {
                 commands.add(|world: &mut World| {
-                    world.send_event(Trusted { inner: message });
+                    let event = Trusted { inner: message };
+                    // warn!("{event:?}");
+                    world.send_event(event);
                 });
             }
             noun => todo!("{noun}"),
         },
         None => {
             commands.add(|world: &mut World| {
-                world.send_event(Untrusted { inner: message });
+                let event = Untrusted { inner: message };
+                // warn!("{event:?}");
+                world.send_event(event);
             });
         }
     }

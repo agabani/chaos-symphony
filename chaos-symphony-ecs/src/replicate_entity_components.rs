@@ -32,7 +32,8 @@ impl Plugin for ReplicateEntityComponentsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Trusted<ReplicateEntityComponentsRequest>>()
             .add_event::<Untrusted<ReplicateEntityComponentsRequest>>()
-            .add_systems(Update, (callback, request));
+            .add_systems(Update, callback)
+            .add_systems(Update, request);
 
         match self.role {
             Role::Client | Role::Simulation => {
@@ -45,7 +46,8 @@ impl Plugin for ReplicateEntityComponentsPlugin {
                 app.add_systems(
                     Update,
                     initiate::<EntitySimulationAuthority, NetworkServerAuthority>,
-                );
+                )
+                .add_systems(Update, validate_request);
             }
         }
     }
@@ -101,6 +103,10 @@ fn initiate<EA, NA>(
     NA: Component,
 {
     entities.for_each(|(entity, entity_authority, entity_identity)| {
+        let request_id = Uuid::new_v4();
+        let span = error_span!("initiate", message_id =%  request_id);
+        let _guard = span.enter();
+
         let Some((endpoint, _)) = endpoints
             .iter()
             .find(|(_, network_identity)| network_identity.inner == *entity_authority.identity())
@@ -110,7 +116,7 @@ fn initiate<EA, NA>(
         };
 
         let request = ReplicateEntityComponentsRequest::message(
-            Uuid::new_v4(),
+            request_id,
             ReplicateEntityComponentsRequestPayload {
                 entity_identity: entity_identity.inner.clone().into(),
             },
@@ -128,11 +134,13 @@ fn initiate<EA, NA>(
 
 #[allow(clippy::needless_pass_by_value)]
 fn request(
-    mut reader: EventReader<Untrusted<ReplicateEntityComponentsRequest>>,
-    mut writer: EventWriter<Trusted<ReplicateEntityComponentsRequest>>,
+    mut reader: EventReader<Trusted<ReplicateEntityComponentsRequest>>,
     endpoints: Query<&NetworkEndpoint>,
 ) {
     reader.read().for_each(|request| {
+        let span = error_span!("request", message_id =%  request.inner.id);
+        let _guard = span.enter();
+
         let Some(source_endpoint_id) = &request.inner.header.source_endpoint_id else {
             error!("request does not have source network endpoint");
             return;
@@ -152,9 +160,22 @@ fn request(
         );
 
         if response.try_send(endpoint).is_err() {
-            error!("failed to send event");
+            error!("failed to send response");
             return;
         };
+        info!("response sent");
+    });
+}
+
+fn validate_request(
+    mut reader: EventReader<Untrusted<ReplicateEntityComponentsRequest>>,
+    mut writer: EventWriter<Trusted<ReplicateEntityComponentsRequest>>,
+) {
+    reader.read().for_each(|request| {
+        let span = error_span!("request", message_id =%  request.inner.id);
+        let _guard = span.enter();
+
+        // TODO: validate requesters permissions to entity.
 
         writer.send(Trusted {
             inner: request.inner.clone(),
