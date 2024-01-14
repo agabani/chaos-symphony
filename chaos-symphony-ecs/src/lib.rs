@@ -25,6 +25,8 @@ pub mod network_router;
 pub mod replicate_entity_components;
 /// Replication.
 pub mod replication;
+/// Transformation.
+pub mod transformation;
 /// Types.
 pub mod types;
 
@@ -72,6 +74,9 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             entity_identities::EntityIdentitiesPlugin::new(self.role),
             entity_identity::EntityIdentityPlugin::new(self.role),
         ));
+
+        // components
+        app.add_plugins(transformation::TransformationPlugin::new(self.role));
 
         // replication
         app.add_plugins(

@@ -2,7 +2,10 @@ use bevy::{prelude::*, utils::Uuid};
 use chaos_symphony_network_bevy::NetworkEndpoint;
 use chaos_symphony_protocol::{EntityIdentityEvent, EntityIdentityEventPayload, Event};
 
-use crate::types::{EntityIdentity, NetworkIdentity, ReplicateSource, Role, Trusted};
+use crate::types::{
+    EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority, NetworkIdentity,
+    ReplicateSource, Role, Trusted,
+};
 
 /// Entity Identity Plugin.
 #[allow(clippy::module_name_repetitions)]
@@ -54,9 +57,27 @@ fn apply_trusted_event(
             return;
         }
 
-        commands.spawn(EntityIdentity {
+        let mut entity = commands.spawn(EntityIdentity {
             inner: trusted.inner.payload.inner.clone().into(),
         });
+
+        if let Some(network_identity) = &trusted.inner.header.source_identity {
+            match network_identity.noun.as_str() {
+                "replication" => {
+                    entity.insert(EntityReplicationAuthority {
+                        identity: network_identity.clone().into(),
+                    });
+                }
+                "simulation" => {
+                    entity.insert(EntitySimulationAuthority {
+                        identity: network_identity.clone().into(),
+                    });
+                }
+                noun => {
+                    todo!("{noun}");
+                }
+            }
+        }
     });
 }
 
