@@ -131,7 +131,7 @@ fn test_translate_entity_identity_periodically(
             writer.send(Trusted { inner: message });
 
             {
-                let mut message = EntitySimulationAuthorityEvent::message(
+                let message = EntitySimulationAuthorityEvent::message(
                     Uuid::new_v4(),
                     chaos_symphony_protocol::EntitySimulationAuthorityEventPayload {
                         authority_identity: Identity {
@@ -143,16 +143,11 @@ fn test_translate_entity_identity_periodically(
                     },
                 );
 
-                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
-                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                    noun: "simulation".to_string(),
-                });
-
                 writer_s.send(Trusted { inner: message });
             }
 
             {
-                let mut message = EntityReplicationAuthorityEvent::message(
+                let message = EntityReplicationAuthorityEvent::message(
                     Uuid::new_v4(),
                     chaos_symphony_protocol::EntityReplicationAuthorityEventPayload {
                         authority_identity: Identity {
@@ -164,16 +159,11 @@ fn test_translate_entity_identity_periodically(
                     },
                 );
 
-                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
-                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                    noun: "simulation".to_string(),
-                });
-
                 writer_r.send(Trusted { inner: message });
             }
 
             {
-                let mut message = EntityClientAuthorityEvent::message(
+                let message = EntityClientAuthorityEvent::message(
                     Uuid::new_v4(),
                     chaos_symphony_protocol::EntityClientAuthorityEventPayload {
                         authority_identity: Identity {
@@ -184,11 +174,6 @@ fn test_translate_entity_identity_periodically(
                         entity_identity: entity_identity.inner.clone().into(),
                     },
                 );
-
-                message.header.source_identity = Some(chaos_symphony_protocol::Identity {
-                    id: Uuid::from_str("d86cb791-fe2f-4f50-85b9-57532d14f037").unwrap(),
-                    noun: "simulation".to_string(),
-                });
 
                 writer_c.send(Trusted { inner: message });
             }
