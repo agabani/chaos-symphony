@@ -8,7 +8,7 @@ use crate::{Identity, Message, MessageCallback, Request, Response};
  * ============================================================================
  */
 
-/// Entity Identities Callback.
+/// Replicate Entity Component Callback.
 #[allow(clippy::module_name_repetitions)]
 pub type ReplicateEntityComponentsCallback = MessageCallback<ReplicateEntityComponentsResponse>;
 
@@ -18,7 +18,7 @@ pub type ReplicateEntityComponentsCallback = MessageCallback<ReplicateEntityComp
  * ============================================================================
  */
 
-/// Entity Identities Request.
+/// Replicate Entity Component Request.
 #[allow(clippy::module_name_repetitions)]
 pub type ReplicateEntityComponentsRequest = Message<ReplicateEntityComponentsRequestPayload>;
 
@@ -28,7 +28,7 @@ impl Request<ReplicateEntityComponentsRequestPayload, ReplicateEntityComponentsR
     const ENDPOINT: &'static str = "/request/replicate_entity_components";
 }
 
-/// Identities Request Payload.
+/// Replicate Entity Component Request Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ReplicateEntityComponentsRequestPayload {
@@ -42,7 +42,7 @@ pub struct ReplicateEntityComponentsRequestPayload {
  * ============================================================================
  */
 
-/// Entity Identities Response.
+/// Replicate Entity Component Response.
 #[allow(clippy::module_name_repetitions)]
 pub type ReplicateEntityComponentsResponse = Message<ReplicateEntityComponentsResponsePayload>;
 
@@ -50,7 +50,7 @@ impl Response<ReplicateEntityComponentsResponsePayload> for ReplicateEntityCompo
     const ENDPOINT: &'static str = "/response/replicate_entity_components";
 }
 
-/// Entity Identities Response Payload.
+/// Replicate Entity Component Response Payload.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum ReplicateEntityComponentsResponsePayload {
