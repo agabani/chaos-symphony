@@ -5,6 +5,8 @@
 
 /// Bevy Config.
 pub mod bevy_config;
+/// Delegation.
+pub mod delegation;
 /// Entity Identities.
 pub mod entity_identities;
 /// Entity Identity.
@@ -77,6 +79,9 @@ impl bevy::prelude::Plugin for DefaultPlugins {
 
         // components
         app.add_plugins(transformation::TransformationPlugin::new(self.role));
+
+        // delegation
+        app.add_plugins(delegation::DelegationPlugin::new(self.role));
 
         // replication
         app.add_plugins(
