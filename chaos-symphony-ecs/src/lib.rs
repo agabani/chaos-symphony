@@ -122,7 +122,7 @@ impl bevy::prelude::Plugin for DefaultPlugins {
             .register_type::<types::EntitySimulationAuthority>()
             .register_type::<types::NetworkIdentity>()
             .register_type::<types::NetworkClientAuthority>()
-            .register_type::<types::NetworkServerAuthority>()
+            .register_type::<types::NetworkSimulationAuthority>()
             .register_type::<types::Ship>()
             .register_type::<types::Transformation>();
     }

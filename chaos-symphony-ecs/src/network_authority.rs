@@ -2,7 +2,8 @@ use bevy::prelude::*;
 use chaos_symphony_network_bevy::NetworkEndpoint;
 
 use crate::types::{
-    NetworkClientAuthority, NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority,
+    NetworkClientAuthority, NetworkIdentity, NetworkReplicationAuthority,
+    NetworkSimulationAuthority,
 };
 
 /// Network Authority Plugin.
@@ -28,7 +29,7 @@ fn label(
             commands.entity(entity).insert(NetworkReplicationAuthority);
         }
         "simulation" => {
-            commands.entity(entity).insert(NetworkServerAuthority);
+            commands.entity(entity).insert(NetworkSimulationAuthority);
         }
         noun => {
             error!(identity_noun = noun, "unrecognized");

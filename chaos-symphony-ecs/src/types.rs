@@ -256,10 +256,10 @@ pub struct NetworkClientAuthority;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
 pub struct NetworkReplicationAuthority;
 
-/// Network Server Authority.
+/// Network Simulation Authority.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component, Reflect)]
-pub struct NetworkServerAuthority;
+pub struct NetworkSimulationAuthority;
 
 /*
  * ============================================================================

@@ -9,7 +9,7 @@ use chaos_symphony_protocol::{
 
 use crate::types::{
     EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
-    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, ReplicateSink,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkSimulationAuthority, ReplicateSink,
     ReplicateSource, Role, Trusted, Untrusted,
 };
 
@@ -45,7 +45,7 @@ impl Plugin for ReplicateEntityComponentsPlugin {
             Role::Replication => {
                 app.add_systems(
                     Update,
-                    initiate::<EntitySimulationAuthority, NetworkServerAuthority>,
+                    initiate::<EntitySimulationAuthority, NetworkSimulationAuthority>,
                 )
                 .add_systems(Update, validate_request);
             }

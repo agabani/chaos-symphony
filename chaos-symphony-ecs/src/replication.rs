@@ -6,7 +6,7 @@ use chaos_symphony_protocol::{Event as _, ReplicateEntityComponentsRequest};
 
 use crate::types::{
     EntityAuthority, EntityIdentity, EntityReplicationAuthority, EntitySimulationAuthority,
-    NetworkIdentity, NetworkReplicationAuthority, NetworkServerAuthority, ReplicateComponent,
+    NetworkIdentity, NetworkReplicationAuthority, NetworkSimulationAuthority, ReplicateComponent,
     ReplicateEvent, Role, Trusted, Untrusted,
 };
 
@@ -66,7 +66,7 @@ where
                         E,
                         P,
                         EntitySimulationAuthority,
-                        NetworkServerAuthority,
+                        NetworkSimulationAuthority,
                     >,
                 );
                 app.add_systems(Update, replicate_trusted_component::<C, P>);
